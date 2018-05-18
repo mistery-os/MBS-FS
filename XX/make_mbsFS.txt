@@ -1,0 +1,17 @@
+make -C /lib/modules/4.14.19-pram-0246cac/build M=`pwd`
+make[1]: Entering directory '/usr/src/linux-headers-4.14.19-pram-0246cac'
+  AR      /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/built-in.o
+  CC [M]  /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.o
+In file included from /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.c:86:0:
+/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbs_fs.h:146:1: warning: multi-line comment [-Wcomment]
+ // #define mbsFS_mcopy_atomic_pte(dst_mm, dst_pte, dst_vma, dst_addr, \
+ ^
+/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbs_fs.h:148:1: warning: multi-line comment [-Wcomment]
+ // #define mbsFS_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
+ ^
+  Building modules, stage 2.
+  MODPOST 1 modules
+WARNING: "transparent_hugepage_flags" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+  CC      /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.mod.o
+  LD [M]  /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko
+make[1]: Leaving directory '/usr/src/linux-headers-4.14.19-pram-0246cac'

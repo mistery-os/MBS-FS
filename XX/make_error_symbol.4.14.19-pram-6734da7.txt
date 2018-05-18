@@ -1,0 +1,11 @@
+WARNING: "enter_syscall_print_funcs" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "event_class_syscall_enter" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "exit_syscall_print_funcs" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "event_class_syscall_exit" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "__khugepaged_enter" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "transparent_hugepage_flags" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "vm_committed_as" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+WARNING: "vm_committed_as_batch" [/home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko] undefined!
+  CC      /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.mod.o
+  LD [M]  /home/zz_backup/git/x3950/YI-coding/FS_4.14.19/mbsFS/mbsFS.ko
+make[1]: Leaving directory '/usr/src/linux-headers-4.14.19-pram-6734da7'
