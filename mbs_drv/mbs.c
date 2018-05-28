@@ -23,11 +23,11 @@
 #include <linux/fs.h>
 #include <linux/slab.h>
 #include <linux/mempolicy.h>
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 #include <linux/pfn_t.h>
 #include <linux/dax.h>
 #include <linux/uio.h>
-#endif
+//#endif
 
 #include <linux/memblock.h>
 #include <linux/uaccess.h>
@@ -51,9 +51,9 @@ struct mbs_device {
 
 	struct request_queue	*mbs_queue;
 	struct gendisk		*mbs_disk;
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 	struct dax_device	*dax_dev;
-#endif
+//#endif
 	struct list_head	mbs_list;
 
 	/*
@@ -125,7 +125,7 @@ static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 	//gfp_flags = GFP_NOIO | __GFP_ZERO |  __GFP_THISNODE;
 	gfp_flags = GFP_NOIO | __GFP_ZERO;
 #ifndef CONFIG_BLK_DEV_MBS_DAX
-	gfp_flags |= __GFP_HIGHMEM;
+//	gfp_flags |= __GFP_HIGHMEM;
 #endif
 //	;struct mempolicy *pol = current->mempolicy;
 //	pol->refcnt = ATOMIC_INIT(1);
@@ -355,7 +355,7 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 	return err;
 }
 
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
@@ -391,7 +391,7 @@ static const struct dax_operations mbs_dax_ops = {
 	.direct_access = mbs_dax_direct_access,
 	.copy_from_iter = mbs_dax_copy_from_iter,
 };
-#endif
+//#endif
 
 static const struct block_device_operations mbs_fops = {
 	.owner =		THIS_MODULE,
@@ -476,21 +476,21 @@ static struct mbs_device *mbs_alloc(int i)
 	sprintf(disk->disk_name, "mbs%d", i);
 	set_capacity(disk, mbs_size * 2);
 
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 	queue_flag_set_unlocked(QUEUE_FLAG_DAX, mbs->mbs_queue);
 	mbs->dax_dev = alloc_dax(mbs, disk->disk_name, &mbs_dax_ops);
 	if (!mbs->dax_dev)
 		goto out_free_inode;
-#endif
+//#endif
 
 
 	return mbs;
 
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 out_free_inode:
 	kill_dax(mbs->dax_dev);
 	put_dax(mbs->dax_dev);
-#endif
+//#endif
 out_free_queue:
 	blk_cleanup_queue(mbs->mbs_queue);
 out_free_dev:
@@ -530,10 +530,10 @@ out:
 static void mbs_del_one(struct mbs_device *mbs)
 {
 	list_del(&mbs->mbs_list);
-#ifdef CONFIG_BLK_DEV_MBS_DAX
+//#ifdef CONFIG_BLK_DEV_MBS_DAX
 	kill_dax(mbs->dax_dev);
 	put_dax(mbs->dax_dev);
-#endif
+//#endif
 	del_gendisk(mbs->mbs_disk);
 	mbs_free(mbs);
 }

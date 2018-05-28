@@ -1473,7 +1473,8 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	page = alloc_page_vma(gfp, &pvma, 0);
+	//page = alloc_page_vma(gfp, &pvma, 0);
+	page = alloc_pages_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
 	return page;
@@ -1678,8 +1679,8 @@ repeat:
 			error = -ENOMEM;
 			goto failed;
 		}
+			}
 #endif
-		//	}
 
 		/* We have to do this with page locked to prevent races */
 		lock_page(page);
@@ -1738,7 +1739,7 @@ repeat:
 			mark_page_accessed(page);
 
 		//		delete_from_swap_cache(page);
-		set_page_dirty(page);
+//		set_page_dirty(page);
 		//		swap_free(swap);
 
 	} else {
@@ -2422,7 +2423,7 @@ mbsFS_write_end(struct file *file, struct address_space *mapping,
 		}
 		SetPageUptodate(head);
 	}
-	set_page_dirty(page);
+	//set_page_dirty(page);
 	unlock_page(page);
 	put_page(page);
 
@@ -2475,7 +2476,7 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 		}
 		if (page) {
 			if (sgp == SGP_CACHE)
-				set_page_dirty(page);
+				//set_page_dirty(page);
 			unlock_page(page);
 		}
 
@@ -2965,7 +2966,7 @@ static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		 * than free the pages we are allocating (and SGP_CACHE pages
 		 * might still be clean: we now need to mark those dirty too).
 		 */
-		set_page_dirty(page);
+//		set_page_dirty(page);
 		unlock_page(page);
 		put_page(page);
 		cond_resched();
@@ -3268,7 +3269,7 @@ static int mbsFS_symlink(struct inode *dir, struct dentry *dentry, const char *s
 		inode->i_op = &mbsFS_symlink_inode_operations;
 		memcpy(page_address(page), symname, len);
 		SetPageUptodate(page);
-		set_page_dirty(page);
+//		set_page_dirty(page);
 		unlock_page(page);
 		put_page(page);
 	}
