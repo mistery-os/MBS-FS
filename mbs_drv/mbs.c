@@ -119,11 +119,11 @@ static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 	 * restriction might be able to be lifted.
 	 */
 	//gfp_flags = GFP_NOIO | __GFP_ZERO;
-	//gfp_flags = __GFP_PRAM;
+	gfp_flags = __GFP_PRAM;
 	//gfp_flags = __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO | __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO |  __GFP_THISNODE;
-	gfp_flags = GFP_NOIO | __GFP_ZERO;
+	//gfp_flags = GFP_NOIO | __GFP_ZERO;
 #ifndef CONFIG_BLK_DEV_MBS_DAX
 //	gfp_flags |= __GFP_HIGHMEM;
 #endif
@@ -133,7 +133,7 @@ static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 //	pol->flags = MPOL_F_LOCAL ;
 //	current->mempolicy = pol;
 //	do_set_mempolicy(MPOL_INTERLEAVE,0,NULL);
-	page = alloc_page(gfp_flags);
+	page = alloc_pram(gfp_flags);
 //	page = __alloc_pages_nodemask(gfp_flags,0,numa_node_id(),numa_node_id());
 	//page = vmalloc_mbs(memblock.pram.total_size, NUMA_NO_NODE, gfp_flags);
 	//page = vmalloc_mbs(4096, NUMA_NO_NODE, gfp_flags);
