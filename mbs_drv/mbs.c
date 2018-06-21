@@ -474,7 +474,7 @@ static struct mbs_device *mbs_alloc(int i)
 	disk->queue		= mbs->mbs_queue;
 	disk->flags		= GENHD_FL_EXT_DEVT;
 	sprintf(disk->disk_name, "mbs%d", i);
-	set_capacity(disk, mbs_size * 2);
+	set_capacity(disk, mbs_size * 2); /* capacity, in 512-byte sectors */
 
 //#ifdef CONFIG_BLK_DEV_MBS_DAX
 	queue_flag_set_unlocked(QUEUE_FLAG_DAX, mbs->mbs_queue);
