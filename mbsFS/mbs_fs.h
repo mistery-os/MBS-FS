@@ -17,8 +17,8 @@ struct mbsFS_inode_info {
 	unsigned long		flags;
 	unsigned long		alloced;	/* data pages alloced to file */
 	unsigned long		swapped;	/* subtotal assigned to swap */
-//	struct list_head        shrinklist;     /* shrinkable hpage inodes */
-//	struct list_head	swaplist;	/* chain of maybes on swap */
+	struct list_head        shrinklist;     /* shrinkable hpage inodes */
+	struct list_head	swaplist;	/* chain of maybes on swap */
 	struct shared_policy	policy;		/* NUMA memory alloc policy */
 	struct simple_xattrs	xattrs;		/* list of xattrs */
 	struct inode		vfs_inode;
@@ -86,67 +86,93 @@ enum sgp_type {
 	SGP_FALLOC,	/* like SGP_WRITE, but make existing page Uptodate */
 };
 
-//extern int mbsFS_getpage(struct inode *inode, pgoff_t index,
-//		struct page **pagep, enum sgp_type sgp);
+#if 0
+extern int mbsFS_getpage(struct inode *inode, pgoff_t index,
+		struct page **pagep, enum sgp_type sgp);
 
-//static inline struct page *mbsFS_read_mapping_page(
-//				struct address_space *mapping, pgoff_t index)
-//{
-//	return mbsFS_read_mapping_page_gfp(mapping, index,
-//					mapping_gfp_mask(mapping));
-//}
+static inline struct page *mbsFS_read_mapping_page(
+				struct address_space *mapping, pgoff_t index)
+{
+	return mbsFS_read_mapping_page_gfp(mapping, index,
+					mapping_gfp_mask(mapping));
+}
 
-//static inline bool mbsFS_file(struct file *file)
-//{
-//	if (!IS_ENABLED(CONFIG_MBS))
-//		return false;
-//	if (!file || !file->f_mapping)
-//		return false;
-//	return mbsFS_mapping(file->f_mapping);
-//}
+static inline bool mbsFS_file(struct file *file)
+{
+	if (!IS_ENABLED(CONFIG_MBS))
+		return false;
+	if (!file || !file->f_mapping)
+		return false;
+	return mbsFS_mapping(file->f_mapping);
+}
 
-//extern bool mbsFS_charge(struct inode *inode, long pages);
-//extern void mbsFS_uncharge(struct inode *inode, long pages);
+extern bool mbsFS_charge(struct inode *inode, long pages);
+extern void mbsFS_uncharge(struct inode *inode, long pages);
 
 //#ifdef CONFIG_TMPFS
 
-//extern int mbsFS_add_seals(struct file *file, unsigned int seals);
-//extern int mbsFS_get_seals(struct file *file);
-//extern long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg);
+extern int mbsFS_add_seals(struct file *file, unsigned int seals);
+extern int mbsFS_get_seals(struct file *file);
+extern long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg);
 
 //#else
 
-//static inline long mbsFS_fcntl(struct file *f, unsigned int c, unsigned long a)
-//{
-//	return -EINVAL;
-//}
+static inline long mbsFS_fcntl(struct file *f, unsigned int c, unsigned long a)
+{
+	return -EINVAL;
+}
 
 //#endif
 
 //#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
-//extern bool mbsFS_huge_enabled(struct vm_area_struct *vma);
+extern bool mbsFS_huge_enabled(struct vm_area_struct *vma);
 //#else
-//static inline bool mbsFS_huge_enabled(struct vm_area_struct *vma)
-//{
-//	return false;
-//}
+static inline bool mbsFS_huge_enabled(struct vm_area_struct *vma)
+{
+	return false;
+}
 //#endif
 
 //#ifdef CONFIG_MBS
-//extern int mbsFS_mcopy_atomic_pte(struct mm_struct *dst_mm, pmd_t *dst_pmd,
-//				  struct vm_area_struct *dst_vma,
-//				  unsigned long dst_addr,
-//				  unsigned long src_addr,
-//				  struct page **pagep);
-//extern int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
-//				    pmd_t *dst_pmd,
-//				    struct vm_area_struct *dst_vma,
-//				    unsigned long dst_addr);
+extern int mbsFS_mcopy_atomic_pte(struct mm_struct *dst_mm, pmd_t *dst_pmd,
+				  struct vm_area_struct *dst_vma,
+				  unsigned long dst_addr,
+				  unsigned long src_addr,
+				  struct page **pagep);
+extern int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
+				    pmd_t *dst_pmd,
+				    struct vm_area_struct *dst_vma,
+				    unsigned long dst_addr);
 // #else
-// #define mbsFS_mcopy_atomic_pte(dst_mm, dst_pte, dst_vma, dst_addr, \
-//			       src_addr, pagep)        ({ BUG(); 0; })
-// #define mbsFS_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
-//				 dst_addr)      ({ BUG(); 0; })
+ #define mbsFS_mcopy_atomic_pte(dst_mm, dst_pte, dst_vma, dst_addr, \
+			       src_addr, pagep)        ({ BUG(); 0; })
+ #define mbsFS_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
+				 dst_addr)      ({ BUG(); 0; })
 // #endif
-
+#endif
+#endif
+//<<<2018.06.25 Yongseob
+#if 0
+extern void prep_transhuge_page(struct page *page);
+extern int split_huge_page_to_list(struct page *page, struct list_head *list);
+extern void mem_cgroup_migrate(struct page *oldpage, struct page *newpage);
+extern struct static_key_false memcg_sockets_enabled_key;
+extern int mem_cgroup_try_charge_swap(struct page *page, swp_entry_t entry);
+extern void page_add_file_rmap(struct page *page, bool compound);
+extern swp_entry_t get_swap_page(struct page *page);
+extern int add_to_swap_cache(struct page *page, swp_entry_t entry, gfp_t gfp_mask);
+extern void delete_from_swap_cache(struct page *page);
+extern struct page *swapin_readahead(swp_entry_t entry, gfp_t gfp_mask,
+		struct vm_area_struct *vma, unsigned long addr);
+extern atomic_long_t nr_swap_pages;
+extern long total_swap_pages;
+extern void swap_free(swp_entry_t entry);
+extern void put_swap_page(struct page *page, swp_entry_t entry);
+extern int page_swapcount(struct page *page);
+extern int free_swap_and_cache(swp_entry_t entry);
+extern void swap_shmem_alloc(swp_entry_t entry);
+extern void swap_shmem_alloc(swp_entry_t entry);
+extern void swap_mbs_alloc(swp_entry_t entry);
+extern int truncate_inode_page(struct address_space *mapping, struct page *page);
+extern void check_move_unevictable_pages(struct page **pages, int nr_pages);
 #endif
