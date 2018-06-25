@@ -1,0 +1,114 @@
+Jun 21 12:11:17 intel4 kernel: [66936.583224] mbs: module loaded
+Jun 21 12:11:25 intel4 kernel: [66944.672204] alloc_cnt=1
+Jun 21 12:11:25 intel4 kernel: [66944.672243] ------------[ cut here ]------------
+Jun 21 12:11:25 intel4 kernel: [66944.672255] WARNING: CPU: 16 PID: 7581 at lib/radix-tree.c:512 radix_tree_preload+0x18/0x30
+Jun 21 12:11:25 intel4 kernel: [66944.672256] Modules linked in: mbs(OE) intel_rapl x86_pkg_temp_thermal intel_powerclamp coretemp intel_cstate intel_rapl_perf joydev input_leds ipmi_si ipmi_devintf ipmi_msghandler mei_me mei lpc_ich ioatdma wmi shpchp mac_hid sch_fq_codel ib_iser rdma_cm iw_cm ib_cm ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi ip_tables x_tables autofs4 btrfs zstd_compress raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq libcrc32c raid1 raid0 multipath linear mgag200 drm_kms_helper syscopyarea sysfillrect crct10dif_pclmul sysimgblt crc32_pclmul fb_sys_fops ghash_clmulni_intel pcbc ttm igb aesni_intel hid_generic aes_x86_64 dca crypto_simd usbhid isci cryptd ahci ptp glue_helper libsas drm hid libahci pps_core scsi_transport_sas i2c_algo_bit [last unloaded: alloc_pages]
+Jun 21 12:11:25 intel4 kernel: [66944.672333] CPU: 16 PID: 7581 Comm: mkfs.ext4 Tainted: G           OE   4.14.19-pram-52282146 #13
+Jun 21 12:11:25 intel4 kernel: [66944.672334] Hardware name: Intel Corporation S4600LH/SVRBD-ROW_P, BIOS SE5C600.86B.02.03.0003.041920141333 04/19/2014
+Jun 21 12:11:25 intel4 kernel: [66944.672336] task: ffff883ff0fe4500 task.stack: ffffc9000f01c000
+Jun 21 12:11:25 intel4 kernel: [66944.672339] RIP: 0010:radix_tree_preload+0x18/0x30
+Jun 21 12:11:25 intel4 kernel: [66944.672340] RSP: 0018:ffffc9000f01f918 EFLAGS: 00010246
+Jun 21 12:11:25 intel4 kernel: [66944.672342] RAX: ffffea0067ff0000 RBX: 0000000000000000 RCX: ffff88203ffded00
+Jun 21 12:11:25 intel4 kernel: [66944.672343] RDX: 0000000000000000 RSI: 0000000000000000 RDI: 0000000000000002
+Jun 21 12:11:25 intel4 kernel: [66944.672344] RBP: ffffc9000f01f918 R08: ffffea0067ff0020 R09: ffff88203ffdedc0
+Jun 21 12:11:25 intel4 kernel: [66944.672345] R10: 0000000000000000 R11: ffff88203ffded58 R12: 0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.672346] R13: ffff882ff663e180 R14: ffffea0067ff0000 R15: 0000000000001000
+Jun 21 12:11:25 intel4 kernel: [66944.672348] FS:  00007f4707594780(0000) GS:ffff881fff580000(0000) knlGS:0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.672349] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jun 21 12:11:25 intel4 kernel: [66944.672350] CR2: 00007f4705fe4000 CR3: 0000001ff7236001 CR4: 00000000001606e0
+Jun 21 12:11:25 intel4 kernel: [66944.672353] Call Trace:
+Jun 21 12:11:25 intel4 kernel: [66944.672366]  mbs_insert_page+0x6b/0xf0 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.672369]  mbs_do_bvec+0x23c/0x410 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.672372]  mbs_make_request+0x92/0x170 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.672379]  generic_make_request+0x123/0x300
+Jun 21 12:11:25 intel4 kernel: [66944.672381]  submit_bio+0x73/0x140
+Jun 21 12:11:25 intel4 kernel: [66944.672383]  ? submit_bio+0x73/0x140
+Jun 21 12:11:25 intel4 kernel: [66944.672389]  ? guard_bio_eod+0x2c/0xf0
+Jun 21 12:11:25 intel4 kernel: [66944.672390]  submit_bh_wbc+0x180/0x1b0
+Jun 21 12:11:25 intel4 kernel: [66944.672393]  __block_write_full_page+0x213/0x3f0
+Jun 21 12:11:25 intel4 kernel: [66944.672395]  ? I_BDEV+0x20/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.672397]  block_write_full_page+0xdc/0x120
+Jun 21 12:11:25 intel4 kernel: [66944.672399]  blkdev_writepage+0x18/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.672405]  __writepage+0x1d/0x50
+Jun 21 12:11:25 intel4 kernel: [66944.672408]  write_cache_pages+0x21b/0x530
+Jun 21 12:11:25 intel4 kernel: [66944.672410]  ? __wb_calc_thresh+0x130/0x130
+Jun 21 12:11:25 intel4 kernel: [66944.672414]  generic_writepages+0x5c/0x90
+Jun 21 12:11:25 intel4 kernel: [66944.672416]  blkdev_writepages+0x2f/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.672418]  ? blkdev_writepages+0x2f/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.672419]  do_writepages+0x4b/0xe0
+Jun 21 12:11:25 intel4 kernel: [66944.672422]  ? blk_finish_plug+0x2c/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.672424]  __filemap_fdatawrite_range+0xc1/0x100
+Jun 21 12:11:25 intel4 kernel: [66944.672426]  ? __filemap_fdatawrite_range+0xc1/0x100
+Jun 21 12:11:25 intel4 kernel: [66944.672428]  file_write_and_wait_range+0x5a/0xb0
+Jun 21 12:11:25 intel4 kernel: [66944.672430]  blkdev_fsync+0x1b/0x50
+Jun 21 12:11:25 intel4 kernel: [66944.672436]  vfs_fsync_range+0x4e/0xb0
+Jun 21 12:11:25 intel4 kernel: [66944.672438]  do_fsync+0x3d/0x70
+Jun 21 12:11:25 intel4 kernel: [66944.672440]  SyS_fsync+0x10/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.672446]  do_syscall_64+0x76/0x130
+Jun 21 12:11:25 intel4 kernel: [66944.672453]  entry_SYSCALL_64_after_hwframe+0x21/0x86
+Jun 21 12:11:25 intel4 kernel: [66944.672458] RIP: 0033:0x7f47065f9214
+Jun 21 12:11:25 intel4 kernel: [66944.672459] RSP: 002b:00007fff194dd988 EFLAGS: 00000246 ORIG_RAX: 000000000000004a
+Jun 21 12:11:25 intel4 kernel: [66944.672461] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007f47065f9214
+Jun 21 12:11:25 intel4 kernel: [66944.672462] RDX: 0000000000001000 RSI: 000056405606fc70 RDI: 0000000000000003
+Jun 21 12:11:25 intel4 kernel: [66944.672463] RBP: 0000564056063920 R08: 000056405606fc70 R09: 0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.672464] R10: 0000000798004000 R11: 0000000000000246 R12: 00007fff194dda00
+Jun 21 12:11:25 intel4 kernel: [66944.672465] R13: 00007fff194dda08 R14: 0000564056063f40 R15: 0000564056063f40
+Jun 21 12:11:25 intel4 kernel: [66944.672466] Code: ff ff ff 41 5c 41 5d 41 5e 5d c3 0f 1f 84 00 00 00 00 00 55 f7 c7 00 00 40 00 48 89 e5 74 0c be 15 00 00 00 e8 4a ff ff ff 5d c3 <0f> ff be 15 00 00 00 e8 3c ff ff ff 5d c3 66 2e 0f 1f 84 00 00 
+Jun 21 12:11:25 intel4 kernel: [66944.672498] ---[ end trace 98416c45a08bad07 ]---
+Jun 21 12:11:25 intel4 kernel: [66944.672509] BUG: unable to handle kernel paging request at ffff8819ffc00000
+Jun 21 12:11:25 intel4 kernel: [66944.672563] IP: mbs_do_bvec+0xde/0x410 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.672585] PGD 291d067 P4D 291d067 PUD 0 
+Jun 21 12:11:25 intel4 kernel: [66944.672611] Oops: 0002 [#1] SMP PTI
+Jun 21 12:11:25 intel4 kernel: [66944.672634] Modules linked in: mbs(OE) intel_rapl x86_pkg_temp_thermal intel_powerclamp coretemp intel_cstate intel_rapl_perf joydev input_leds ipmi_si ipmi_devintf ipmi_msghandler mei_me mei lpc_ich ioatdma wmi shpchp mac_hid sch_fq_codel ib_iser rdma_cm iw_cm ib_cm ib_core iscsi_tcp libiscsi_tcp libiscsi scsi_transport_iscsi ip_tables x_tables autofs4 btrfs zstd_compress raid10 raid456 async_raid6_recov async_memcpy async_pq async_xor async_tx xor raid6_pq libcrc32c raid1 raid0 multipath linear mgag200 drm_kms_helper syscopyarea sysfillrect crct10dif_pclmul sysimgblt crc32_pclmul fb_sys_fops ghash_clmulni_intel pcbc ttm igb aesni_intel hid_generic aes_x86_64 dca crypto_simd usbhid isci cryptd ahci ptp glue_helper libsas drm hid libahci pps_core scsi_transport_sas i2c_algo_bit [last unloaded: alloc_pages]
+Jun 21 12:11:25 intel4 kernel: [66944.672916] CPU: 16 PID: 7581 Comm: mkfs.ext4 Tainted: G        W  OE   4.14.19-pram-52282146 #13
+Jun 21 12:11:25 intel4 kernel: [66944.672951] Hardware name: Intel Corporation S4600LH/SVRBD-ROW_P, BIOS SE5C600.86B.02.03.0003.041920141333 04/19/2014
+Jun 21 12:11:25 intel4 kernel: [66944.672992] task: ffff883ff0fe4500 task.stack: ffffc9000f01c000
+Jun 21 12:11:25 intel4 kernel: [66944.673018] RIP: 0010:mbs_do_bvec+0xde/0x410 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.673040] RSP: 0018:ffffc9000f01f958 EFLAGS: 00010206
+Jun 21 12:11:25 intel4 kernel: [66944.673064] RAX: ffffea0067ff0000 RBX: 0000000000001000 RCX: 0000000000000200
+Jun 21 12:11:25 intel4 kernel: [66944.673093] RDX: 0000000000000000 RSI: ffff881ff91cf000 RDI: ffff8819ffc00000
+Jun 21 12:11:25 intel4 kernel: [66944.673121] RBP: ffffc9000f01f9a0 R08: 0000000000000000 R09: 0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.673150] R10: ffff883ff0fe4500 R11: 0000160000000000 R12: ffff881ff91cf000
+Jun 21 12:11:25 intel4 kernel: [66944.673179] R13: ffff880000000000 R14: 0000000000000000 R15: 0000000000001000
+Jun 21 12:11:25 intel4 kernel: [66944.673209] FS:  00007f4707594780(0000) GS:ffff881fff580000(0000) knlGS:0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.673241] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+Jun 21 12:11:25 intel4 kernel: [66944.673265] CR2: ffff8819ffc00000 CR3: 0000001ff7236001 CR4: 00000000001606e0
+Jun 21 12:11:25 intel4 kernel: [66944.673294] Call Trace:
+Jun 21 12:11:25 intel4 kernel: [66944.673310]  mbs_make_request+0x92/0x170 [mbs]
+Jun 21 12:11:25 intel4 kernel: [66944.673333]  generic_make_request+0x123/0x300
+Jun 21 12:11:25 intel4 kernel: [66944.673356]  submit_bio+0x73/0x140
+Jun 21 12:11:25 intel4 kernel: [66944.673375]  ? submit_bio+0x73/0x140
+Jun 21 12:11:25 intel4 kernel: [66944.673396]  ? guard_bio_eod+0x2c/0xf0
+Jun 21 12:11:25 intel4 kernel: [66944.673415]  submit_bh_wbc+0x180/0x1b0
+Jun 21 12:11:25 intel4 kernel: [66944.673434]  __block_write_full_page+0x213/0x3f0
+Jun 21 12:11:25 intel4 kernel: [66944.673456]  ? I_BDEV+0x20/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.673473]  block_write_full_page+0xdc/0x120
+Jun 21 12:11:25 intel4 kernel: [66944.673494]  blkdev_writepage+0x18/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.673513]  __writepage+0x1d/0x50
+Jun 21 12:11:25 intel4 kernel: [66944.673532]  write_cache_pages+0x21b/0x530
+Jun 21 12:11:25 intel4 kernel: [66944.673553]  ? __wb_calc_thresh+0x130/0x130
+Jun 21 12:11:25 intel4 kernel: [66944.673574]  generic_writepages+0x5c/0x90
+Jun 21 12:11:25 intel4 kernel: [66944.673594]  blkdev_writepages+0x2f/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.673614]  ? blkdev_writepages+0x2f/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.673633]  do_writepages+0x4b/0xe0
+Jun 21 12:11:25 intel4 kernel: [66944.673652]  ? blk_finish_plug+0x2c/0x40
+Jun 21 12:11:25 intel4 kernel: [66944.673672]  __filemap_fdatawrite_range+0xc1/0x100
+Jun 21 12:11:25 intel4 kernel: [66944.673694]  ? __filemap_fdatawrite_range+0xc1/0x100
+Jun 21 12:11:25 intel4 kernel: [66944.674534]  file_write_and_wait_range+0x5a/0xb0
+Jun 21 12:11:25 intel4 kernel: [66944.675338]  blkdev_fsync+0x1b/0x50
+Jun 21 12:11:25 intel4 kernel: [66944.676140]  vfs_fsync_range+0x4e/0xb0
+Jun 21 12:11:25 intel4 kernel: [66944.676931]  do_fsync+0x3d/0x70
+Jun 21 12:11:25 intel4 kernel: [66944.677710]  SyS_fsync+0x10/0x20
+Jun 21 12:11:25 intel4 kernel: [66944.678484]  do_syscall_64+0x76/0x130
+Jun 21 12:11:25 intel4 kernel: [66944.679261]  entry_SYSCALL_64_after_hwframe+0x21/0x86
+Jun 21 12:11:25 intel4 kernel: [66944.680020] RIP: 0033:0x7f47065f9214
+Jun 21 12:11:25 intel4 kernel: [66944.680753] RSP: 002b:00007fff194dd988 EFLAGS: 00000246 ORIG_RAX: 000000000000004a
+Jun 21 12:11:25 intel4 kernel: [66944.681483] RAX: ffffffffffffffda RBX: 0000000000000000 RCX: 00007f47065f9214
+Jun 21 12:11:25 intel4 kernel: [66944.682196] RDX: 0000000000001000 RSI: 000056405606fc70 RDI: 0000000000000003
+Jun 21 12:11:25 intel4 kernel: [66944.682888] RBP: 0000564056063920 R08: 000056405606fc70 R09: 0000000000000000
+Jun 21 12:11:25 intel4 kernel: [66944.683554] R10: 0000000798004000 R11: 0000000000000246 R12: 00007fff194dda00
+Jun 21 12:11:25 intel4 kernel: [66944.684199] R13: 00007fff194dda08 R14: 0000564056063f40 R15: 0000564056063f40
+Jun 21 12:11:25 intel4 kernel: [66944.684833] Code: 10 03 00 00 41 83 82 70 12 00 00 01 4a 8d 3c 18 4c 89 e6 48 c1 ff 06 48 c1 e7 0c 4c 01 ef 4c 01 f7 83 fb 08 72 08 89 d9 c1 e9 03 <f3> 48 a5 31 c0 f6 c3 04 0f 85 bf 01 00 00 f6 c3 02 0f 85 9f 01 
+Jun 21 12:11:25 intel4 kernel: [66944.686150] RIP: mbs_do_bvec+0xde/0x410 [mbs] RSP: ffffc9000f01f958
+Jun 21 12:11:25 intel4 kernel: [66944.686792] CR2: ffff8819ffc00000
+Jun 21 12:11:25 intel4 kernel: [66944.687431] ---[ end trace 98416c45a08bad08 ]---
