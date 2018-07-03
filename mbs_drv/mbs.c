@@ -118,8 +118,8 @@ static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 	 * If DAX was reworked to use pfns and kmap throughout, this
 	 * restriction might be able to be lifted.
 	 */
-	//gfp_flags = GFP_NOIO | __GFP_ZERO;
-	gfp_flags = __GFP_PRAM;
+	gfp_flags = GFP_NOIO | __GFP_ZERO;
+//	gfp_flags |= __GFP_PRAM;
 	//gfp_flags = __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO | __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO |  __GFP_THISNODE;
@@ -440,9 +440,9 @@ static struct mbs_device *mbs_alloc(int i)
 	struct gendisk *disk;
 
 	mbs_size = memblock.pram.total_size/1024;//convert to kbytes
-//	mbs = kzalloc(sizeof(*mbs), __GFP_PRAM );
+	mbs = kzalloc(sizeof(*mbs), __GFP_PRAM );
 //	mbs = kzalloc(sizeof(*mbs), __GFP_PRAM | __GFP_THISNODE);
-	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
+	//mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
 		goto out;
 	mbs->mbs_number		= i;
