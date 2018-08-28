@@ -119,7 +119,7 @@ static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 	 * restriction might be able to be lifted.
 	 */
 	gfp_flags = GFP_NOIO | __GFP_ZERO;
-	gfp_flags = __GFP_PRAM | __GFP_ZERO;
+	gfp_flags |= __GFP_PRAM;
 	//gfp_flags = __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO | __GFP_PRAM | __GFP_THISNODE;
 	//gfp_flags = GFP_NOIO | __GFP_ZERO |  __GFP_THISNODE;
@@ -448,8 +448,7 @@ static struct mbs_device *mbs_alloc(int i)
 		goto out;
 	mbs->mbs_number		= i;
 	spin_lock_init(&mbs->mbs_lock);
-	//INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC | GFP_PRAM);
-	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC);
+	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC | GFP_PRAM);
 
 	mbs->mbs_queue = blk_alloc_queue(GFP_KERNEL);
 	if (!mbs->mbs_queue)
