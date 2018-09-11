@@ -3756,7 +3756,6 @@ static const struct file_operations mbsFS_file_operations = {
 	.fallocate	= mbsFS_fallocate,
 };
 
-#if 0
 static const struct inode_operations mbsFS_inode_operations = {
 	.getattr	= mbsFS_getattr,
 	.setattr	= mbsFS_setattr,
@@ -3796,7 +3795,6 @@ static const struct inode_operations mbsFS_special_inode_operations = {
 #endif
 };
 
-#endif
 
 static const struct super_operations mbsFS_ops = {
 	.alloc_inode	= mbsFS_alloc_inode,
