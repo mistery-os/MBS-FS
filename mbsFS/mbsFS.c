@@ -159,9 +159,11 @@ static unsigned long mbsFS_default_max_inodes(void)
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
+#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
+#endif
 static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
 		struct page **pagep, enum mbs_type mbstype,
 		gfp_t gfp, struct vm_area_struct *vma,
@@ -509,6 +511,7 @@ static int mbsFS_add_to_page_cache(struct page *page,
 /*
  * Like delete_from_page_cache, but substitutes swap for page.
  */
+#if 0
 static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 {
 	struct address_space *mapping = page->mapping;
@@ -526,7 +529,7 @@ static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 	put_page(page);
 	BUG_ON(error);
 }
-
+#endif
 /*
  * Remove swap entry from radix tree, free the swap and its page cache.
  */
@@ -1374,6 +1377,7 @@ failed:
  * NUMA mempolicy, and applied also to anonymous pages in do_swap_page();
  * but for now it is a simple matter of zone.
  */
+#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp)
 {
 	return page_zonenum(page) > gfp_zone(gfp);
@@ -1443,6 +1447,7 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 	put_page(oldpage);
 	return error;
 }
+#endif
 /*
  * mbsFS_getpage_gfp - find page in cache, or or allocate
  *
@@ -2001,13 +2006,14 @@ out_nomem:
 	spin_unlock_irq(&info->lock);
 	return retval;
 }
-
+#if 0
 static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	file_accessed(file);
 	vma->vm_ops = &mbsFS_vm_ops;
 	return 0;
 }
+#endif
 #endif
 
 static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode *dir,
