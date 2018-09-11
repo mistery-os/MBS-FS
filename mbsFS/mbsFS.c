@@ -2405,7 +2405,6 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	return retval ? retval : error;
 }
 
-#if 0
 /*
  * llseek SEEK_DATA or SEEK_HOLE through the radix_tree.
  */
@@ -2846,7 +2845,6 @@ out:
 	inode_unlock(inode);
 	return error;
 }
-#endif
 
 static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
