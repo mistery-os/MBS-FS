@@ -3804,6 +3804,8 @@ static const struct inode_operations mbsFS_special_inode_operations = {
 #endif
 };
 
+#endif
+
 static const struct super_operations mbsFS_ops = {
 	.alloc_inode	= mbsFS_alloc_inode,
 	.destroy_inode	= mbsFS_destroy_inode,
@@ -3823,7 +3825,6 @@ static const struct vm_operations_struct mbsFS_vm_ops = {
 	.get_policy     = mbsFS_get_policy,
 #endif
 };
-#endif
 
 static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 		int flags, const char *dev_name, void *data)
