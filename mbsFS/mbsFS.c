@@ -3338,6 +3338,8 @@ static const struct export_operations mbsFS_export_ops = {
 	.fh_to_dentry	= mbsFS_fh_to_dentry,
 };
 
+#endif
+
 static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
@@ -3509,6 +3511,8 @@ static int mbsFS_show_options(struct seq_file *seq, struct dentry *root)
 	mbsFS_show_mpol(seq, sbinfo->mpol);
 	return 0;
 }
+
+#if 0
 
 #define MFD_NAME_PREFIX "memfd:"
 #define MFD_NAME_PREFIX_LEN (sizeof(MFD_NAME_PREFIX) - 1)
