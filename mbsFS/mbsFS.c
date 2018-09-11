@@ -1299,7 +1299,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 			HPAGE_PMD_ORDER, &pvma, 0, numa_node_id(), true);
 	mbsFS_pseudo_vma_destroy(&pvma);
 	//if (page)
-		//prep_transhuge_page(page);
+	//prep_transhuge_page(page);
 	return page;
 }
 
@@ -1310,9 +1310,9 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	/* page = alloc_page_vma_pram(gfp, &pvma, 0); */
-	gfp = GFP_PRAM;
-	page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
+	//gfp = GFP_PRAM;
+	//page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_page_vma_pram(gfp, &pvma, 0); 
 	mbsFS_pseudo_vma_destroy(&pvma);
 
 	return page;
@@ -1327,7 +1327,7 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 	int err = -ENOSPC;
 
 	//if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
-		huge = false;
+	huge = false;
 	nr = huge ? HPAGE_PMD_NR : 1;
 
 	if (!mbsFS_inode_acct_block(inode, nr))
@@ -1875,7 +1875,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 	addr = get_area(file, uaddr, len, pgoff, flags);
 
 	//if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
-		return addr;
+	return addr;
 	if (IS_ERR_VALUE(addr))
 		return addr;
 	if (addr & ~PAGE_MASK)
@@ -3838,10 +3838,11 @@ static int __init mbsFS_init(void)
 {
 	int error;
 
+	pr_debug("mbsFS_init\n");
+#if 0
 	/* don't re-init */
 	if (mbsFS_inode_cachep)
 		return 0;
-#if 0
 	error = mbsFS_init_inodecache();
 	if (error)
 		goto out3;
