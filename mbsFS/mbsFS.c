@@ -2003,6 +2003,7 @@ static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 	vma->vm_ops = &mbsFS_vm_ops;
 	return 0;
 }
+#endif
 
 static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode *dir,
 		umode_t mode, dev_t dev, unsigned long flags)
@@ -2064,6 +2065,8 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 	}
 	return inode;
 }
+
+#if 0
 
 bool mbsFS_mapping(struct address_space *mapping)
 {
