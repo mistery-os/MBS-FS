@@ -144,7 +144,7 @@ struct mbsFS_falloc {
 };
 
 unsigned long totalpram_pages;
-
+#if 0
 static unsigned long mbsFS_default_max_blocks(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
@@ -3684,9 +3684,10 @@ failed:
 	mbsFS_put_super(sb);
 	return err;
 }
+#endif
 
 static struct kmem_cache *mbsFS_inode_cachep;
-
+#if 0
 static struct inode *mbsFS_alloc_inode(struct super_block *sb)
 {
 	struct mbsFS_inode_info *info;
@@ -3710,7 +3711,7 @@ static void mbsFS_destroy_inode(struct inode *inode)
 		mpol_free_shared_pram_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
-
+#endif
 static void mbsFS_init_inode(void *foo)
 {
 	struct mbsFS_inode_info *info = foo;
@@ -3837,6 +3838,7 @@ static struct file_system_type mbsFS_fs_type = {
 	.kill_sb	= mbsfs_kill_sb,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
+
 static int __init mbsFS_init(void)
 {
 	int error;
@@ -3890,7 +3892,7 @@ MODULE_LICENSE("GPL");
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
-
+#if 0
 /* common code */
 static const struct dentry_operations anon_ops = {
 	.d_dname = simple_dname
@@ -4044,3 +4046,4 @@ EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
 /*###########################################################################*/
 /*###########################################################################*/
 /*###########################################################################*/
+#endif
