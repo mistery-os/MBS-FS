@@ -148,12 +148,14 @@ unsigned long totalpram_pages;
 static unsigned long mbsFS_default_max_blocks(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+	totalpram_pages=totalram_pages;
 	return totalpram_pages / 2;
 }
 
 static unsigned long mbsFS_default_max_inodes(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+	totalpram_pages=totalram_pages;
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
@@ -3370,6 +3372,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 			goto error;
 		}
 
+	totalpram_pages=totalram_pages;
 		if (!strcmp(this_char,"size")) {
 			unsigned long long size;
 			size = memparse(value,&rest);
