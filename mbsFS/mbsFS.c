@@ -3619,6 +3619,7 @@ err_name:
 	kfree(name);
 	return error;
 }
+#endif
 
 static void mbsFS_put_super(struct super_block *sb)
 {
@@ -3629,7 +3630,6 @@ static void mbsFS_put_super(struct super_block *sb)
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
-#endif
 
 int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 {
