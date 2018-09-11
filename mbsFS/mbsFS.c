@@ -179,7 +179,6 @@ static inline struct mbsFS_sb_info *MBS_SB(struct super_block *sb)
 	return sb->s_fs_info;
 }
 
-#if 0
 /*
  * mbsFS_file_setup pre-accounts the whole fixed size of a VM object,
  * for shared memory and for shared anonymous (/dev/zero) mappings
@@ -198,6 +197,7 @@ static inline void mbsFS_unacct_size(unsigned long flags, loff_t size)
 		vm_unacct_memory(VM_ACCT(size));
 }
 
+#if 0
 static inline int mbsFS_reacct_size(unsigned long flags,
 		loff_t oldsize, loff_t newsize)
 {
@@ -923,6 +923,7 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
+#endif
 
 static void mbsFS_evict_inode(struct inode *inode)
 {
@@ -954,6 +955,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 	clear_inode(inode);
 }
 
+#if 0
 static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
 	struct radix_tree_iter iter;
