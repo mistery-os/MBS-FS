@@ -124,8 +124,8 @@ struct mbsFS_falloc {
 	pgoff_t nr_unswapped;	/* how often writepage refused to swap out */
 };
 
-unsigned long totalpram_pages; 
-totalpram_pages = memblock.pram.total_size/PAGE_SIZE;//convert to pages
+unsigned long totalpram_pages = memblock.pram.total_size/PAGE_SIZE;//convert to pages
+
 static unsigned long mbsFS_default_max_blocks(void)
 {
 	return totalpram_pages / 2;
