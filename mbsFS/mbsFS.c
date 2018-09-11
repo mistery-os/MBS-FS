@@ -3720,6 +3720,7 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 		kfree(inode->i_link);
 	kmem_cache_free(mbsFS_inode_cachep, MBS_I(inode));
 }
+#endif
 
 static void mbsFS_destroy_inode(struct inode *inode)
 {
@@ -3727,7 +3728,7 @@ static void mbsFS_destroy_inode(struct inode *inode)
 		mpol_free_shared_pram_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
-#endif
+
 static void mbsFS_init_inode(void *foo)
 {
 	struct mbsFS_inode_info *info = foo;
