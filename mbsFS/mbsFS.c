@@ -210,6 +210,7 @@ static inline int mbsFS_reacct_size(unsigned long flags,
 	}
 	return 0;
 }
+#endif
 
 /*
  * ... whereas mbsfs objects are accounted incrementally as
@@ -225,7 +226,6 @@ static inline int mbsFS_acct_block(unsigned long flags, long pages)
 	return security_vm_enough_memory_mm(current->mm,
 			pages * VM_ACCT(PAGE_SIZE));
 }
-#endif
 
 static inline void mbsFS_unacct_blocks(unsigned long flags, long pages)
 {
@@ -508,7 +508,6 @@ static int mbsFS_add_to_page_cache(struct page *page,
 	return error;
 }
 
-#if 0
 /*
  * Like delete_from_page_cache, but substitutes swap for page.
  */
@@ -547,6 +546,7 @@ static int mbsFS_free_swap(struct address_space *mapping,
 	return 0;
 }
 
+#if 0
 /*
  * Determine (in bytes) how many of the mbsFS object's pages mapped by the
  * given offsets are swapped out.
@@ -1259,7 +1259,6 @@ static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 #define vm_policy vm_private_data
 #endif
 
-#if 0
 static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1320,7 +1319,6 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	//prep_transhuge_page(page);
 	return page;
 }
-#endif
 static struct page *mbsFS_alloc_page(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
