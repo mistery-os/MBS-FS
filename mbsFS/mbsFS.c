@@ -1304,7 +1304,7 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
 	/* page = alloc_page_vma_pram(gfp, &pvma, 0); */
-	gfp |= GFP_PRAM;
+	gfp = GFP_PRAM;
 	page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
