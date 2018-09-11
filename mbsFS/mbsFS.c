@@ -848,7 +848,7 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(dentry);
 	struct mbsFS_inode_info *info = MBS_I(inode);
-	struct mbsFS_sb_info *sbinfo = MBS_SB(inode->i_sb);
+	//struct mbsFS_sb_info *sbinfo = MBS_SB(inode->i_sb);
 	int error;
 
 	error = setattr_prepare(dentry, attr);
