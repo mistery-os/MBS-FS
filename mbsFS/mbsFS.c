@@ -3731,6 +3731,7 @@ static void mbsFS_destroy_inodecache(void)
 	kmem_cache_destroy(mbsFS_inode_cachep);
 }
 
+#if 0
 static const struct address_space_operations mbsFS_aops = {
 	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
@@ -3838,6 +3839,7 @@ static struct file_system_type mbsFS_fs_type = {
 	.kill_sb	= mbsfs_kill_sb,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
+#endif
 
 static int __init mbsFS_init(void)
 {
