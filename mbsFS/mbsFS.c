@@ -135,7 +135,6 @@ extern void lru_add_drain_all(void);
  * inode->i_private (with i_mutex making sure that it has only one user at
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
-#if 0
 struct mbsFS_falloc {
 	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
 	pgoff_t start;		/* start of range currently being fallocated */
@@ -3835,7 +3834,6 @@ static struct file_system_type mbsFS_fs_type = {
 	.kill_sb	= mbsfs_kill_sb,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
-#endif
 static int __init mbsFS_init(void)
 {
 	int error;
@@ -3892,7 +3890,6 @@ MODULE_LICENSE("GPL");
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 
 /* common code */
-#if 0
 static const struct dentry_operations anon_ops = {
 	.d_dname = simple_dname
 };
@@ -4045,4 +4042,3 @@ EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
 /*###########################################################################*/
 /*###########################################################################*/
 /*###########################################################################*/
-#endif
