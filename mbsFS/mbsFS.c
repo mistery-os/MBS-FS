@@ -225,6 +225,7 @@ static inline int mbsFS_acct_block(unsigned long flags, long pages)
 	return security_vm_enough_memory_mm(current->mm,
 			pages * VM_ACCT(PAGE_SIZE));
 }
+#endif
 
 static inline void mbsFS_unacct_blocks(unsigned long flags, long pages)
 {
@@ -263,7 +264,6 @@ static inline void mbsFS_inode_unacct_blocks(struct inode *inode, long pages)
 		percpu_counter_sub(&sbinfo->used_blocks, pages);
 	mbsFS_unacct_blocks(info->flags, pages);
 }
-#endif
 
 static const struct super_operations mbsFS_ops;
 static const struct address_space_operations mbsFS_aops;
@@ -307,7 +307,6 @@ static void mbsFS_free_inode(struct super_block *sb)
 	}
 }
 
-#if 0
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
  * @inode: inode to recalc
@@ -333,6 +332,7 @@ static void mbsFS_recalc_inode(struct inode *inode)
 	}
 }
 
+#if 0
 bool mbsFS_charge(struct inode *inode, long pages)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
@@ -364,7 +364,7 @@ void mbsFS_uncharge(struct inode *inode, long pages)
 
 	mbsFS_inode_unacct_blocks(inode, pages);
 }
-
+#endif
 /*
  * Replace item expected in radix tree by a new item, while holding tree lock.
  */
@@ -386,6 +386,7 @@ static int mbsFS_radix_tree_replace(struct address_space *mapping,
 			replacement, NULL, NULL);
 	return 0;
 }
+#if 0
 /*
  * Sometimes, before we decide whether to proceed or to fail, we must check
  * that an entry was not already brought back from swap by a racing thread.
@@ -403,6 +404,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 	rcu_read_unlock();
 	return item == swp_to_radix_entry(swap);
 }
+#endif
 
 /*
  * Definitions for "huge mbsfs": mbsfs mounted with the huge= option
@@ -437,6 +439,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_FORCE	(-2)
 
 #define mbsFS_huge MBS_HUGE_DENY
+
 static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
@@ -505,6 +508,7 @@ static int mbsFS_add_to_page_cache(struct page *page,
 	return error;
 }
 
+#if 0
 /*
  * Like delete_from_page_cache, but substitutes swap for page.
  */
@@ -648,6 +652,7 @@ void mbsFS_unlock_mapping(struct address_space *mapping)
 		cond_resched();
 	}
 }
+#endif
 
 /*
  * Remove range of pages and swap entries from radix tree, and free them.
@@ -847,7 +852,6 @@ static void mbsFS_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 	mbsFS_recalc_inode(inode);
 	spin_unlock_irq(&info->lock);
 }
-#endif
 
 void mbsFS_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 {
@@ -1316,7 +1320,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	//prep_transhuge_page(page);
 	return page;
 }
-
+#endif
 static struct page *mbsFS_alloc_page(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1362,7 +1366,6 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 failed:
 	return ERR_PTR(err);
 }
-#endif
 /*
  * When a page is moved from swapcache to mbsFS filecache (either by the
  * usual swapin of mbsFS_getpage_gfp(), or by the less common swapoff of
@@ -1776,7 +1779,6 @@ unlock:
 	return error;
 }
 
-#if 0
 /*
  * This is like autoremove_wake_function, but it removes the wait queue
  * entry unconditionally - even if something else had already woken the
@@ -1788,7 +1790,6 @@ static int synchronous_wake_function(wait_queue_entry_t *wait, unsigned mode, in
 	list_del_init(&wait->entry);
 	return ret;
 }
-#endif
 
 static int mbsFS_fault(struct vm_fault *vmf)
 {
