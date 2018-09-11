@@ -1218,6 +1218,8 @@ redirty:
 	return 0;
 }
 
+#endif
+
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
@@ -1229,6 +1231,8 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 
 	seq_printf(seq, ",mpol=%s", buffer);
 }
+
+#if 0
 
 static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 {
