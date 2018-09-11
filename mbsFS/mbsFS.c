@@ -3842,20 +3842,18 @@ static int __init mbsFS_init(void)
 	int error;
 
 	pr_info("mbsFS_init\n");
-#if 0
 	/* don't re-init */
 	if (mbsFS_inode_cachep)
 		return 0;
 	error = mbsFS_init_inodecache();
 	if (error)
 		goto out3;
-
+#if 0
 	error = register_filesystem(&mbsFS_fs_type);
 	if (error) {
 		pr_err("Could not register mbsfs\n");
 		goto out2;
 	}
-#endif
 	/*
 	   mbsFS_mnt = kern_mount(&mbsFS_fs_type);
 	   if (IS_ERR(mbsFS_mnt)) {
@@ -3864,7 +3862,9 @@ static int __init mbsFS_init(void)
 	   goto out1;
 	   }
 	   */
+#endif
 	return 0;
+#if 0
 	//out1:
 	//	unregister_filesystem(&mbsFS_fs_type);
 out2:
@@ -3872,14 +3872,13 @@ out2:
 out3:
 	mbsFS_mnt = ERR_PTR(error);
 	return error;
+#endif
 }
 static void __exit mbsFS_exit(void)
 {
 	pr_info("mbsFS_exit\n");
-#if 0
-	unregister_filesystem(&mbsFS_fs_type);
+//	unregister_filesystem(&mbsFS_fs_type);
 	mbsFS_destroy_inodecache();
-#endif
 }
 
 module_init(mbsFS_init);
