@@ -1234,7 +1234,6 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 	seq_printf(seq, ",mpol=%s", buffer);
 }
 
-#if 0
 
 static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 {
@@ -1252,6 +1251,7 @@ static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 #define vm_policy vm_private_data
 #endif
 
+#if 0
 static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
