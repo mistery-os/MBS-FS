@@ -1119,6 +1119,7 @@ out:
 	put_page(page);
 	return error;
 }
+#endif
 
 /*
  * Move the page from the page cache to the swap cache.
@@ -1229,7 +1230,6 @@ redirty:
 	return 0;
 }
 
-#endif
 
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
@@ -2225,6 +2225,7 @@ static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
 #define mbsFS_initxattrs NULL
 #endif
 
+#endif
 ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct file *file = iocb->ki_filp;
@@ -2411,6 +2412,7 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	return retval ? retval : error;
 }
 
+#if 0
 /*
  * llseek SEEK_DATA or SEEK_HOLE through the radix_tree.
  */
