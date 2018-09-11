@@ -1274,7 +1274,6 @@ static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 	/* Drop reference taken by mpol_shared_pram_policy_lookup() */
 	mpol_cond_put(vma->vm_policy);
 }
-#if 0
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1287,7 +1286,6 @@ static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 
 	return page;
 }
-#endif
 static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1375,7 +1373,6 @@ failed:
  * NUMA mempolicy, and applied also to anonymous pages in do_swap_page();
  * but for now it is a simple matter of zone.
  */
-#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp)
 {
 	return page_zonenum(page) > gfp_zone(gfp);
@@ -1445,7 +1442,6 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 	put_page(oldpage);
 	return error;
 }
-#endif
 /*
  * mbsFS_getpage_gfp - find page in cache, or or allocate
  *
