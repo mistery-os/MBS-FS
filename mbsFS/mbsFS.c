@@ -386,7 +386,6 @@ static int mbsFS_radix_tree_replace(struct address_space *mapping,
 			replacement, NULL, NULL);
 	return 0;
 }
-#if 0
 /*
  * Sometimes, before we decide whether to proceed or to fail, we must check
  * that an entry was not already brought back from swap by a racing thread.
@@ -404,7 +403,6 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 	rcu_read_unlock();
 	return item == swp_to_radix_entry(swap);
 }
-#endif
 
 /*
  * Definitions for "huge mbsfs": mbsfs mounted with the huge= option
