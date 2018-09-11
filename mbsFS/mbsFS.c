@@ -2840,6 +2840,7 @@ out:
 	inode_unlock(inode);
 	return error;
 }
+#endif
 
 static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
@@ -2862,6 +2863,7 @@ static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
 	return 0;
 }
 
+#if 0
 /*
  * File creation. Allocate an inode, and we're done..
  */
