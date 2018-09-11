@@ -3702,7 +3702,7 @@ failed:
 }
 
 static struct kmem_cache *mbsFS_inode_cachep;
-#if 0
+
 static struct inode *mbsFS_alloc_inode(struct super_block *sb)
 {
 	struct mbsFS_inode_info *info;
@@ -3712,6 +3712,7 @@ static struct inode *mbsFS_alloc_inode(struct super_block *sb)
 	return &info->vfs_inode;
 }
 
+#if 0
 static void mbsFS_destroy_callback(struct rcu_head *head)
 {
 	struct inode *inode = container_of(head, struct inode, i_rcu);
