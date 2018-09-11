@@ -199,7 +199,6 @@ static inline void mbsFS_unacct_size(unsigned long flags, loff_t size)
 		vm_unacct_memory(VM_ACCT(size));
 }
 
-#if 0
 static inline int mbsFS_reacct_size(unsigned long flags,
 		loff_t oldsize, loff_t newsize)
 {
@@ -212,7 +211,6 @@ static inline int mbsFS_reacct_size(unsigned long flags,
 	}
 	return 0;
 }
-#endif
 
 /*
  * ... whereas mbsfs objects are accounted incrementally as
@@ -334,7 +332,6 @@ static void mbsFS_recalc_inode(struct inode *inode)
 	}
 }
 
-#if 0
 bool mbsFS_charge(struct inode *inode, long pages)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
@@ -366,7 +363,7 @@ void mbsFS_uncharge(struct inode *inode, long pages)
 
 	mbsFS_inode_unacct_blocks(inode, pages);
 }
-#endif
+
 /*
  * Replace item expected in radix tree by a new item, while holding tree lock.
  */
@@ -545,7 +542,6 @@ static int mbsFS_free_swap(struct address_space *mapping,
 	return 0;
 }
 
-#if 0
 /*
  * Determine (in bytes) how many of the mbsFS object's pages mapped by the
  * given offsets are swapped out.
@@ -651,7 +647,6 @@ void mbsFS_unlock_mapping(struct address_space *mapping)
 		cond_resched();
 	}
 }
-#endif
 
 /*
  * Remove range of pages and swap entries from radix tree, and free them.
@@ -1066,6 +1061,7 @@ static int mbsFS_unuse_inode(struct mbsFS_inode_info *info,
 /*
  * Search through swapped inodes to find and replace swap by page.
  */
+
 int mbsFS_unuse(swp_entry_t swap, struct page *page)
 {
 	struct list_head *this, *next;
@@ -2064,7 +2060,6 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 	return inode;
 }
 
-#if 0
 
 bool mbsFS_mapping(struct address_space *mapping)
 {
@@ -2212,7 +2207,6 @@ static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
 #define mbsFS_initxattrs NULL
 #endif
 
-#endif
 ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct file *file = iocb->ki_filp;
