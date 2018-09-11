@@ -3564,7 +3564,7 @@ SYSCALL_DEFINE2(memfd_create,
 	}
 
 	if (flags & MFD_HUGETLB) {
-		struct user_struct *user = NULL;
+		//struct user_struct *user = NULL;
 		file = ERR_PTR(-ENOSYS) ;
 		/*
 		   file = hugetlb_file_setup(name, 0, VM_NORESERVE, &user,
@@ -3841,7 +3841,7 @@ static int __init mbsFS_init(void)
 	/* don't re-init */
 	if (mbsFS_inode_cachep)
 		return 0;
-
+#if 0
 	error = mbsFS_init_inodecache();
 	if (error)
 		goto out3;
@@ -3851,6 +3851,7 @@ static int __init mbsFS_init(void)
 		pr_err("Could not register mbsfs\n");
 		goto out2;
 	}
+#endif
 	/*
 	   mbsFS_mnt = kern_mount(&mbsFS_fs_type);
 	   if (IS_ERR(mbsFS_mnt)) {
