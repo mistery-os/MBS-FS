@@ -3614,6 +3614,7 @@ static void mbsFS_put_super(struct super_block *sb)
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
+#endif
 
 int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 {
@@ -3684,7 +3685,6 @@ failed:
 	mbsFS_put_super(sb);
 	return err;
 }
-#endif
 
 static struct kmem_cache *mbsFS_inode_cachep;
 #if 0
@@ -3813,6 +3813,7 @@ static const struct vm_operations_struct mbsFS_vm_ops = {
 	.get_policy     = mbsFS_get_policy,
 #endif
 };
+#endif
 
 static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 		int flags, const char *dev_name, void *data)
@@ -3839,7 +3840,6 @@ static struct file_system_type mbsFS_fs_type = {
 	.kill_sb	= mbsfs_kill_sb,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
-#endif
 
 static int __init mbsFS_init(void)
 {
@@ -3852,12 +3852,12 @@ static int __init mbsFS_init(void)
 	error = mbsFS_init_inodecache();
 	if (error)
 		goto out3;
-#if 0
 	error = register_filesystem(&mbsFS_fs_type);
 	if (error) {
 		pr_err("Could not register mbsfs\n");
 		goto out2;
 	}
+#if 0
 	/*
 	   mbsFS_mnt = kern_mount(&mbsFS_fs_type);
 	   if (IS_ERR(mbsFS_mnt)) {
@@ -3871,9 +3871,9 @@ static int __init mbsFS_init(void)
 #if 0
 	//out1:
 	//	unregister_filesystem(&mbsFS_fs_type);
+#endif
 out2:
 	mbsFS_destroy_inodecache();
-#endif
 out3:
 	mbsFS_mnt = ERR_PTR(error);
 	return error;
