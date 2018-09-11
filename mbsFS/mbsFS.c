@@ -274,7 +274,6 @@ static const struct inode_operations mbsFS_special_inode_operations;
 static const struct vm_operations_struct mbsFS_vm_ops;
 static struct file_system_type mbsFS_fs_type;
 
-#if 0
 bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
 	return vma->vm_ops == &mbsFS_vm_ops;
@@ -298,6 +297,7 @@ static int mbsFS_reserve_inode(struct super_block *sb)
 	return 0;
 }
 
+#if 0
 static void mbsFS_free_inode(struct super_block *sb)
 {
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
