@@ -511,7 +511,6 @@ static int mbsFS_add_to_page_cache(struct page *page,
 /*
  * Like delete_from_page_cache, but substitutes swap for page.
  */
-#if 0
 static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 {
 	struct address_space *mapping = page->mapping;
@@ -529,7 +528,6 @@ static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 	put_page(page);
 	BUG_ON(error);
 }
-#endif
 /*
  * Remove swap entry from radix tree, free the swap and its page cache.
  */
@@ -1874,8 +1872,6 @@ static int mbsFS_fault(struct vm_fault *vmf)
 	return ret;
 }
 
-#if 0
-
 unsigned long mbsFS_get_unmapped_area(struct file *file,
 		unsigned long uaddr, unsigned long len,
 		unsigned long pgoff, unsigned long flags)
@@ -1963,7 +1959,6 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 		return addr;
 	return inflated_addr;
 }
-#endif
 
 #ifdef CONFIG_NUMA
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
@@ -2006,14 +2001,12 @@ out_nomem:
 	spin_unlock_irq(&info->lock);
 	return retval;
 }
-#if 0
 static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	file_accessed(file);
 	vma->vm_ops = &mbsFS_vm_ops;
 	return 0;
 }
-#endif
 #endif
 
 static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode *dir,
