@@ -297,7 +297,6 @@ static int mbsFS_reserve_inode(struct super_block *sb)
 	return 0;
 }
 
-#if 0
 static void mbsFS_free_inode(struct super_block *sb)
 {
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
@@ -308,6 +307,7 @@ static void mbsFS_free_inode(struct super_block *sb)
 	}
 }
 
+#if 0
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
  * @inode: inode to recalc
