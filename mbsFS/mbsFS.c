@@ -113,17 +113,13 @@ extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
 extern void lru_add_drain_all(void);
+extern struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
+				struct user_struct **user, int creat_flags,
+				int page_size_log);
 
 #define MBSFS_MAGIC             0x20181231      //random number 
 
 //#define is_file_hugepages(file)			false
-static inline struct file *
-hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
-		struct user_struct **user, int creat_flags,
-		int page_size_log)
-{
-	return ERR_PTR(-ENOSYS);
-}
 
 
 /*
