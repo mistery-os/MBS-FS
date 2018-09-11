@@ -3880,13 +3880,7 @@ static void __exit mbsFS_exit(void)
 
 module_init(mbsFS_init);
 module_exit(mbsFS_exit);
-static int __init lkm_example_init(void) {
-	printk(KERN_INFO “Hello, World!\n”);
-	return 0;
-}
-static void __exit lkm_example_exit(void) {
-	printk(KERN_INFO “Goodbye, World!\n”);
-}
+
 MODULE_AUTHOR("Yongseob");
 MODULE_DESCRIPTION("mbsFS: memory bus-connected storage File System");
 MODULE_LICENSE("GPL");

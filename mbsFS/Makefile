@@ -19,7 +19,7 @@ PWD := $(shell pwd)
 
 all:
 #	$(MAKE) -C $(KERNELDIR) M=$(PWD) modules
-	make -C /lib/modules/$(shell uname -r)/build M=`pwd`
+	make -C /lib/modules/$(shell uname -r)/build M=`pwd` modules
 clean:
 #	$(MAKE) -C $(KERNELDIR) M=$(PWD) clean
 	make -C /lib/modules/$(shell uname -r)/build M=`pwd` clean
