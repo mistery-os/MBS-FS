@@ -120,15 +120,15 @@ extern void lru_add_drain_all(void);
 #define MBSFS_MAGIC             0x20181231      //random number 
 
 #define is_file_hugepages(file)			false
-static inline struct file *
-hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
-		struct user_struct **user, int creat_flags,
-		int page_size_log)
-{
-	return ERR_PTR(-ENOSYS);
-}
+//static inline struct file *
+//hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
+//		struct user_struct **user, int creat_flags,
+//		int page_size_log)
+//{
+//	return ERR_PTR(-ENOSYS);
+//}
 
-static inline void prep_transhuge_page(struct page *page) {}
+//static inline void prep_transhuge_page(struct page *page) {}
 /*
  * mbsFS_fallocate communicates with mbsFS_fault or mbsFS_writepage via
  * inode->i_private (with i_mutex making sure that it has only one user at
@@ -1298,8 +1298,8 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	page = alloc_pages_vma(gfp | __GFP_COMP | __GFP_NORETRY | __GFP_NOWARN,
 			HPAGE_PMD_ORDER, &pvma, 0, numa_node_id(), true);
 	mbsFS_pseudo_vma_destroy(&pvma);
-	if (page)
-		prep_transhuge_page(page);
+	//if (page)
+		//prep_transhuge_page(page);
 	return page;
 }
 
@@ -3565,11 +3565,13 @@ SYSCALL_DEFINE2(memfd_create,
 
 	if (flags & MFD_HUGETLB) {
 		struct user_struct *user = NULL;
-
-		file = hugetlb_file_setup(name, 0, VM_NORESERVE, &user,
-				HUGETLB_ANONHUGE_INODE,
-				(flags >> MFD_HUGE_SHIFT) &
-				MFD_HUGE_MASK);
+		file = ERR_PTR(-ENOSYS) ;
+		/*
+		   file = hugetlb_file_setup(name, 0, VM_NORESERVE, &user,
+		   HUGETLB_ANONHUGE_INODE,
+		   (flags >> MFD_HUGE_SHIFT) &
+		   MFD_HUGE_MASK);
+		   */
 	} else
 		file = mbsFS_file_setup(name, 0, VM_NORESERVE);
 	if (IS_ERR(file)) {
