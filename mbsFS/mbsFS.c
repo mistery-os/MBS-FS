@@ -159,11 +159,9 @@ static unsigned long mbsFS_default_max_inodes(void)
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
-#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
-#endif
 static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
 		struct page **pagep, enum mbs_type mbstype,
 		gfp_t gfp, struct vm_area_struct *vma,
@@ -854,7 +852,6 @@ void mbsFS_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 }
 EXPORT_SYMBOL_GPL(mbsFS_truncate_range);
 
-#if 0
 static int mbsFS_getattr(const struct path *path, struct kstat *stat,
 		u32 request_mask, unsigned int query_flags)
 {
@@ -923,7 +920,6 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
-#endif
 
 static void mbsFS_evict_inode(struct inode *inode)
 {
@@ -955,7 +951,6 @@ static void mbsFS_evict_inode(struct inode *inode)
 	clear_inode(inode);
 }
 
-#if 0
 static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
 	struct radix_tree_iter iter;
@@ -1113,7 +1108,6 @@ out:
 	put_page(page);
 	return error;
 }
-#endif
 
 /*
  * Move the page from the page cache to the swap cache.
@@ -2855,11 +2849,10 @@ static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
 	return 0;
 }
 
-#if 0
 /*
  * File creation. Allocate an inode, and we're done..
  */
-	static int
+static int
 mbsFS_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
 	struct inode *inode;
@@ -3269,7 +3262,6 @@ static const struct inode_operations mbsFS_symlink_inode_operations = {
 #endif
 };
 
-#endif
 
 static struct dentry *mbsFS_get_parent(struct dentry *child)
 {
