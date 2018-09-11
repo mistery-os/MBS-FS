@@ -25,7 +25,6 @@
  */
 
 #include <linux/fs.h>
-#include <linux/init.h>
 #include <linux/vfs.h>
 #include <linux/mount.h>
 #include <linux/ramfs.h>
@@ -44,6 +43,9 @@
 static struct vfsmount *mbsFS_mnt;
 
 //#########################
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
 //#########################
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
@@ -81,7 +83,6 @@ static struct vfsmount *mbsFS_mnt;
 //#########################
 //#########################
 #include <linux/memblock.h>
-#include <linux/module.h>
 #include "mbs_fs.h"
 #include "internal.h"
 
@@ -146,13 +147,13 @@ unsigned long totalpram_pages;
 
 static unsigned long mbsFS_default_max_blocks(void)
 {
-totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	return totalpram_pages / 2;
 }
 
 static unsigned long mbsFS_default_max_inodes(void)
 {
-totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
@@ -1283,7 +1284,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	struct page *page;
 
 	//if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
-		return NULL;
+	return NULL;
 
 	hindex = round_down(index, HPAGE_PMD_NR);
 	rcu_read_lock();
@@ -3879,7 +3880,13 @@ static void __exit mbsFS_exit(void)
 
 module_init(mbsFS_init);
 module_exit(mbsFS_exit);
-
+static int __init lkm_example_init(void) {
+	printk(KERN_INFO “Hello, World!\n”);
+	return 0;
+}
+static void __exit lkm_example_exit(void) {
+	printk(KERN_INFO “Goodbye, World!\n”);
+}
 MODULE_AUTHOR("Yongseob");
 MODULE_DESCRIPTION("mbsFS: memory bus-connected storage File System");
 MODULE_LICENSE("GPL");
