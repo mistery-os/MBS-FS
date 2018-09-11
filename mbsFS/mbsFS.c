@@ -144,7 +144,7 @@ struct mbsFS_falloc {
 };
 
 unsigned long totalpram_pages;
-#if 0
+
 static unsigned long mbsFS_default_max_blocks(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
@@ -159,6 +159,7 @@ static unsigned long mbsFS_default_max_inodes(void)
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
+#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
