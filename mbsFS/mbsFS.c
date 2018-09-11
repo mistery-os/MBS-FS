@@ -3864,7 +3864,7 @@ static int __init mbsFS_init(void)
 	   }
 	   */
 	return 0;
-
+#if 0
 	//out1:
 	//	unregister_filesystem(&mbsFS_fs_type);
 out2:
@@ -3872,6 +3872,7 @@ out2:
 out3:
 	mbsFS_mnt = ERR_PTR(error);
 	return error;
+#endif
 }
 static void __exit mbsFS_exit(void)
 {
