@@ -3873,10 +3873,10 @@ static int __init mbsFS_init(void)
 	//	unregister_filesystem(&mbsFS_fs_type);
 out2:
 	mbsFS_destroy_inodecache();
+#endif
 out3:
 	mbsFS_mnt = ERR_PTR(error);
 	return error;
-#endif
 }
 static void __exit mbsFS_exit(void)
 {
