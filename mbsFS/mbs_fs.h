@@ -77,18 +77,18 @@ extern struct file *mbsFS_file_setup(const char *name,
 //						pgoff_t start, pgoff_t end);
 
 /* Flag allocation requirements to mbsFS_getpage */
-enum sgp_type {
-	SGP_READ,	/* don't exceed i_size, don't allocate page */
-	SGP_CACHE,	/* don't exceed i_size, may allocate page */
-	SGP_NOHUGE,	/* like SGP_CACHE, but no huge pages */
-	SGP_HUGE,	/* like SGP_CACHE, huge pages preferred */
-	SGP_WRITE,	/* may exceed i_size, may allocate !Uptodate page */
-	SGP_FALLOC,	/* like SGP_WRITE, but make existing page Uptodate */
+enum mbs_type {
+	MBS_READ,	/* don't exceed i_size, don't allocate page */
+	MBS_CACHE,	/* don't exceed i_size, may allocate page */
+	MBS_NOHUGE,	/* like MBS_CACHE, but no huge pages */
+	MBS_HUGE,	/* like MBS_CACHE, huge pages preferred */
+	MBS_WRITE,	/* may exceed i_size, may allocate !Uptodate page */
+	MBS_FALLOC,	/* like MBS_WRITE, but make existing page Uptodate */
 };
 
 #if 0
 extern int mbsFS_getpage(struct inode *inode, pgoff_t index,
-		struct page **pagep, enum sgp_type sgp);
+		struct page **pagep, enum mbs_type sgp);
 
 static inline struct page *mbsFS_read_mapping_page(
 				struct address_space *mapping, pgoff_t index)

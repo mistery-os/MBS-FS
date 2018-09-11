@@ -1,5 +1,5 @@
 /*
- * Memory Bus connected Storage File System
+ * Memory Bus-connected Storage File System
  * Copyright (C) 2018 Yongseob Lee
  *
  * Resizable virtual memory filesystem for Linux.
@@ -81,7 +81,7 @@ static struct vfsmount *mbsFS_mnt;
 //#########################
 //#########################
 #include <linux/memblock.h>
-#include<linux/module.h>
+#include <linux/module.h>
 #include "mbs_fs.h"
 #include "internal.h"
 
@@ -94,13 +94,28 @@ static struct vfsmount *mbsFS_mnt;
 /* Symlink up to this size is kmalloc'ed instead of using a swappable page */
 #define SHORT_SYMLINK_LEN 128
 
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+#undef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+#endif
+#ifdef CONFIG_MBSFS_XATTR
+#undef CONFIG_MBSFS_XATTR
+#endif
+#ifdef CONFIG_MBSFS_POSIX_ACL
+#undef CONFIG_MBSFS_POSIX_ACL
+#endif
+#ifndef CONFIG_MBSFS
+#define CONFIG_MBSFS	1
+#endif
+#ifdef CONFIG_MIGRATION
+#undef CONFIG_MIGRATION
+#endif
 //<<<2018.05.18 compile waring
 //extern s32 vm_committed_as_batch;
 //>>>
 extern struct memblock memblock;
 extern struct mempolicy * mpol_shared_policy_lookup(struct shared_policy *sp, unsigned long idx);
 extern int mpol_set_shared_policy(struct shared_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
-#define MBSFS_MAGIC             0x20180831      //random number 
+#define MBSFS_MAGIC             0x20181231      //random number 
 
 /*
  * mbsFS_fallocate communicates with mbsFS_fault or mbsFS_writepage via
@@ -115,31 +130,31 @@ struct mbsFS_falloc {
 	pgoff_t nr_unswapped;	/* how often writepage refused to swap out */
 };
 
-//#ifdef CONFIG_TMPFS
+unsigned long totalpram_pages = memblock.pram.total_size/PAGE_SIZE;//convert to pages
+#ifdef CONFIG_MBSFS
 static unsigned long mbsFS_default_max_blocks(void)
 {
-	return totalram_pages / 2;
+	return totalpram_pages / 2;
 }
 
 static unsigned long mbsFS_default_max_inodes(void)
 {
-	return min(totalram_pages - totalhigh_pages, totalram_pages / 2);
+	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
-//#endif
+#endif
 
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
-
 static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
-		struct page **pagep, enum sgp_type sgp,
+		struct page **pagep, enum mbs_type mbstype,
 		gfp_t gfp, struct vm_area_struct *vma,
 		struct vm_fault *vmf, int *fault_type);
 
 int mbsFS_getpage(struct inode *inode, pgoff_t index,
-		struct page **pagep, enum sgp_type sgp)
+		struct page **pagep, enum mbs_type mbstype)
 {
-	return mbsFS_getpage_gfp(inode, index, pagep, sgp,
+	return mbsFS_getpage_gfp(inode, index, pagep, mbstype,
 			mapping_gfp_mask(inode->i_mapping), NULL, NULL, NULL);
 }
 
@@ -239,7 +254,7 @@ static const struct inode_operations mbsFS_inode_operations;
 static const struct inode_operations mbsFS_dir_inode_operations;
 static const struct inode_operations mbsFS_special_inode_operations;
 static const struct vm_operations_struct mbsFS_vm_ops;
-//static struct file_system_type mbsFS_fs_type;
+static struct file_system_type mbsFS_fs_type;
 
 bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
@@ -298,7 +313,7 @@ static void mbsFS_recalc_inode(struct inode *inode)
 		mbsFS_inode_unacct_blocks(inode, freed);
 	}
 }
-#if 0
+
 bool mbsFS_charge(struct inode *inode, long pages)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
@@ -330,7 +345,7 @@ void mbsFS_uncharge(struct inode *inode, long pages)
 
 	mbsFS_inode_unacct_blocks(inode, pages);
 }
-#endif
+
 /*
  * Replace item expected in radix tree by a new item, while holding tree lock.
  */
@@ -407,7 +422,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 
 int mbsFS_huge __read_mostly;
 
-#if defined(CONFIG_SYSFS) || defined(CONFIG_TMPFS)
+#if defined(CONFIG_SYSFS) || defined(CONFIG_MBSFS)
 static int mbsFS_parse_huge(const char *str)
 {
 	if (!strcmp(str, "never"))
@@ -561,17 +576,15 @@ static long mbsFS_unused_huge_count(struct super_block *sb,
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 	return READ_ONCE(sbinfo->shrinklist_len);
 }
-//#else /* !CONFIG_TRANSPARENT_HUGE_PAGECACHE */
+#else /* !CONFIG_TRANSPARENT_HUGE_PAGECACHE */
 
-//#define mbsFS_huge MBS_HUGE_DENY
-#if 0
+#define mbsFS_huge MBS_HUGE_DENY
 static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
 }
-#endif
-//#endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE */
+#endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE */
 
 /*
  * Like add_to_page_cache_locked, but error if expected item has gone.
@@ -614,8 +627,7 @@ static int mbsFS_add_to_page_cache(struct page *page,
 			count_vm_event(THP_FILE_ALLOC);
 		}
 	} else if (!expected) {
-				error = radix_tree_insert(&mapping->page_tree, index, page);
-		error = __radix_tree_insert(&mapping->page_tree, index, 0, page);
+		error = radix_tree_insert(&mapping->page_tree, index, page);
 	} else {
 		error = mbsFS_radix_tree_replace(mapping, index, expected,
 				page);
@@ -730,21 +742,21 @@ unsigned long mbsFS_swap_usage(struct vm_area_struct *vma)
 	struct address_space *mapping = inode->i_mapping;
 	unsigned long swapped;
 
-/* Be careful as we don't hold info->lock */
+	/* Be careful as we don't hold info->lock */
 	swapped = READ_ONCE(info->swapped);
 
-/*
- * The easier cases are when the mbsFS object has nothing in swap, or
- * the vma maps it whole. Then we can simply use the stats that we
- * already track.
- */
+	/*
+	 * The easier cases are when the mbsFS object has nothing in swap, or
+	 * the vma maps it whole. Then we can simply use the stats that we
+	 * already track.
+	 */
 	if (!swapped)
 		return 0;
 
 	if (!vma->vm_pgoff && vma->vm_end - vma->vm_start >= inode->i_size)
 		return swapped << PAGE_SHIFT;
 
-/* Here comes the more involved part */
+	/* Here comes the more involved part */
 	return mbsFS_partial_swap_usage(mapping,
 			linear_page_index(vma, vma->vm_start),
 			linear_page_index(vma, vma->vm_end));
@@ -760,14 +772,14 @@ void mbsFS_unlock_mapping(struct address_space *mapping)
 	pgoff_t index = 0;
 
 	pagevec_init(&pvec, 0);
-/*
- * Minor point, but we might as well stop if someone else SHM_LOCKs it.
- */
+	/*
+	 * Minor point, but we might as well stop if someone else SHM_LOCKs it.
+	 */
 	while (!mapping_unevictable(mapping)) {
-/*
- * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
- * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
- */
+		/*
+		 * Avoid pagevec_lookup(): find_get_pages() returns 0 as if it
+		 * has finished, if it hits a row of PAGEVEC_SIZE swap entries.
+		 */
 		pvec.nr = find_get_entries(mapping, index,
 				PAGEVEC_SIZE, pvec.pages, indices);
 		if (!pvec.nr)
@@ -831,16 +843,16 @@ static void mbsFS_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 				continue;
 
 			if (PageTransTail(page)) {
-/* Middle of THP: zero out the page */
+				/* Middle of THP: zero out the page */
 				clear_highpage(page);
 				unlock_page(page);
 				continue;
 			} else if (PageTransHuge(page)) {
 				if (index == round_down(end, HPAGE_PMD_NR)) {
-/*
- * Range ends in the middle of THP:
- * zero out the page
- */
+					/*
+					 * Range ends in the middle of THP:
+					 * zero out the page
+					 */
 					clear_highpage(page);
 					unlock_page(page);
 					continue;
@@ -866,7 +878,7 @@ static void mbsFS_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 
 	if (partial_start) {
 		struct page *page = NULL;
-		mbsFS_getpage(inode, start - 1, &page, SGP_READ);
+		mbsFS_getpage(inode, start - 1, &page, MBS_READ);
 		if (page) {
 			unsigned int top = PAGE_SIZE;
 			if (start > end) {
@@ -881,7 +893,7 @@ static void mbsFS_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 	}
 	if (partial_end) {
 		struct page *page = NULL;
-		mbsFS_getpage(inode, end, &page, SGP_READ);
+		mbsFS_getpage(inode, end, &page, MBS_READ);
 		if (page) {
 			zero_user_segment(page, 0, partial_end);
 			set_page_dirty(page);
@@ -929,23 +941,23 @@ static void mbsFS_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 			lock_page(page);
 
 			if (PageTransTail(page)) {
-/* Middle of THP: zero out the page */
+				/* Middle of THP: zero out the page */
 				clear_highpage(page);
 				unlock_page(page);
-/*
- * Partial thp truncate due 'start' in middle
- * of THP: don't need to look on these pages
- * again on !pvec.nr restart.
- */
+				/*
+				 * Partial thp truncate due 'start' in middle
+				 * of THP: don't need to look on these pages
+				 * again on !pvec.nr restart.
+				 */
 				if (index != round_down(end, HPAGE_PMD_NR))
 					start++;
 				continue;
 			} else if (PageTransHuge(page)) {
 				if (index == round_down(end, HPAGE_PMD_NR)) {
-/*
- * Range ends in the middle of THP:
- * zero out the page
- */
+					/*
+					 * Range ends in the middle of THP:
+					 * zero out the page
+					 */
 					clear_highpage(page);
 					unlock_page(page);
 					continue;
@@ -1067,6 +1079,7 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
+
 static void mbsFS_evict_inode(struct inode *inode)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
@@ -1179,25 +1192,25 @@ static int mbsFS_unuse_inode(struct mbsFS_inode_info *info,
 	 * but also to hold up mbsFS_evict_inode(): so inode cannot be freed
 	 * beneath us (pagelock doesn't help until the page is in pagecache).
 	 */
-		if (!error)
-			   error = mbsFS_add_to_page_cache(*pagep, mapping, index,
-					   radswap);
-		if (error != -ENOMEM) {
-	/*
-	 * Truncation and eviction use free_swap_and_cache(), which
-	 * only does trylock page: if we raced, best clean up here.
-	 */
-			delete_from_swap_cache(*pagep);
-			set_page_dirty(*pagep);
-			if (!error) {
+	if (!error)
+		   error = mbsFS_add_to_page_cache(*pagep, mapping, index,
+				   radswap);
+	if (error != -ENOMEM) {
+		/*
+		 * Truncation and eviction use free_swap_and_cache(), which
+		 * only does trylock page: if we raced, best clean up here.
+		 */
+		delete_from_swap_cache(*pagep);
+		set_page_dirty(*pagep);
+		if (!error) {
 			spin_lock_irq(&info->lock);
-				info->swapped--;
-				spin_unlock_irq(&info->lock);
-				swap_free(swap);
-			}
+			info->swapped--;
+			spin_unlock_irq(&info->lock);
+			swap_free(swap);
 		}
-		return error;
 	}
+	return error;
+}
 
 /*
  * Search through swapped inodes to find and replace swap by page.
@@ -1363,8 +1376,7 @@ redirty:
 	return 0;
 }
 
-#ifdef CONFIG_NUMA
-//#if defined(CONFIG_NUMA) && defined(CONFIG_TMPFS)
+#if defined(CONFIG_NUMA) && defined(CONFIG_MBSFS)
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
@@ -1388,7 +1400,7 @@ static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 	}
 	return mpol;
 }
-#else /* !CONFIG_NUMA || !CONFIG_TMPFS */
+#else /* !CONFIG_NUMA || !CONFIG_MBSFS */
 static inline void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 }
@@ -1396,7 +1408,7 @@ static inline struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 {
 	return NULL;
 }
-#endif /* CONFIG_NUMA && CONFIG_TMPFS */
+#endif /* CONFIG_NUMA && CONFIG_MBSFS */
 #ifndef CONFIG_NUMA
 #define vm_policy vm_private_data
 #endif
@@ -1469,9 +1481,9 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	/* page = alloc_page_vma(gfp, &pvma, 0); */
+	/* page = alloc_page_vma_pram(gfp, &pvma, 0); */
 	gfp |= GFP_PRAM;
-	page = alloc_pages_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
 	return page;
@@ -1600,7 +1612,7 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
  * otherwise they are NULL.
  */
 static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
-		struct page **pagep, enum sgp_type sgp, gfp_t gfp,
+		struct page **pagep, enum mbs_type mbstype, gfp_t gfp,
 		struct vm_area_struct *vma, struct vm_fault *vmf, int *fault_type)
 {
 	struct address_space *mapping = inode->i_mapping;
@@ -1609,8 +1621,8 @@ static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
 	struct mm_struct *charge_mm;
 	struct mem_cgroup *memcg;
 	struct page *page;
-	swp_entry_t swap;
-	enum sgp_type sgp_huge = sgp;
+	//swp_entry_t swap;
+	enum mbs_type mbstype_huge = mbstype;
 	pgoff_t hindex = index;
 	int error;
 	int once = 0;
@@ -1618,34 +1630,36 @@ static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
 
 	if (index > (MAX_LFS_FILESIZE >> PAGE_SHIFT))
 		return -EFBIG;
-	if (sgp == SGP_NOHUGE || sgp == SGP_HUGE)
-		sgp = SGP_CACHE;
+	if (mbstype == MBS_NOHUGE || mbstype == MBS_HUGE)
+		mbstype = MBS_CACHE;
 repeat:
-	swap.val = 0;
+	//swap.val = 0;
 	page = find_lock_entry(mapping, index);
-	if (radix_tree_exceptional_entry(page)) {
-		swap = radix_to_swp_entry(page);
-		page = NULL;
-	}
-
-	if (sgp <= SGP_CACHE &&
+	/*
+	   if (radix_tree_exceptional_entry(page)) {
+	   swap = radix_to_swp_entry(page);
+	   page = NULL;
+	   }
+	   */
+	if (mbstype <= MBS_CACHE &&
 			((loff_t)index << PAGE_SHIFT) >= i_size_read(inode)) {
 		error = -EINVAL;
 		goto unlock;
 	}
 
-	if (page && sgp == SGP_WRITE)
+	if (page && mbstype == MBS_WRITE)
 		mark_page_accessed(page);
 
 	/* fallocated page? */
 	if (page && !PageUptodate(page)) {
-		if (sgp != SGP_READ)
+		if (mbstype != MBS_READ)
 			goto clear;
 		unlock_page(page);
 		put_page(page);
 		page = NULL;
 	}
-	if (page || (sgp == SGP_READ && !swap.val)) {
+	//if (page || (mbstype == MBS_READ && !swap.val)) {
+	if (page || (mbstype == MBS_READ )) {
 		*pagep = page;
 		return 0;
 	}
@@ -1657,6 +1671,7 @@ repeat:
 	sbinfo = MBS_SB(inode->i_sb);
 	charge_mm = vma ? vma->vm_mm : current->mm;
 
+#if 0
 	if (swap.val) {
 		/* Look it up and read it in.. */
 		page = lookup_swap_cache(swap, NULL, 0);
@@ -1726,14 +1741,16 @@ repeat:
 		mbsFS_recalc_inode(inode);
 		spin_unlock_irq(&info->lock);
 
-		if (sgp == SGP_WRITE)
+		if (mbstype == MBS_WRITE)
 			mark_page_accessed(page);
 
 		delete_from_swap_cache(page);
 		set_page_dirty(page);
 		swap_free(swap);
 
-	} else {
+	} else
+#endif	
+	{
 		if (vma && userfaultfd_missing(vma)) {
 			*fault_type = handle_userfault(vmf, VM_UFFD_MISSING);
 			return 0;
@@ -1742,7 +1759,7 @@ repeat:
 		/* mbsFS_symlink() */
 		if (mapping->a_ops != &mbsFS_aops)
 			goto alloc_nohuge;
-		if (mbsFS_huge == MBS_HUGE_DENY || sgp_huge == SGP_NOHUGE)
+		if (mbsFS_huge == MBS_HUGE_DENY || mbstype_huge == MBS_NOHUGE)
 			goto alloc_nohuge;
 		if (mbsFS_huge == MBS_HUGE_FORCE)
 			goto alloc_huge;
@@ -1759,7 +1776,7 @@ repeat:
 				goto alloc_huge;
 			/* fallthrough */
 			case MBS_HUGE_ADVISE:
-			if (sgp_huge == SGP_HUGE)
+			if (mbstype_huge == MBS_HUGE)
 				goto alloc_huge;
 			/* TODO: implement fadvise() hints */
 			goto alloc_nohuge;
@@ -1797,7 +1814,7 @@ alloc_nohuge:		page = mbsFS_alloc_and_acct_page(gfp, inode,
 		else
 			hindex = index;
 
-		if (sgp == SGP_WRITE)
+		if (mbstype == MBS_WRITE)
 			__SetPageReferenced(page);
 
 		error = mem_cgroup_try_charge(page, charge_mm, gfp, &memcg,
@@ -1848,17 +1865,17 @@ alloc_nohuge:		page = mbsFS_alloc_and_acct_page(gfp, inode,
 		}
 
 		/*
-		 * Let SGP_FALLOC use the SGP_WRITE optimization on a new page.
+		 * Let MBS_FALLOC use the MBS_WRITE optimization on a new page.
 		 */
-		if (sgp == SGP_FALLOC)
-			sgp = SGP_WRITE;
+		if (mbstype == MBS_FALLOC)
+			mbstype = MBS_WRITE;
 clear:
 		/*
-		 * Let SGP_WRITE caller clear ends if write does not fill page;
-		 * but SGP_FALLOC on a page fallocated earlier must initialize
+		 * Let MBS_WRITE caller clear ends if write does not fill page;
+		 * but MBS_FALLOC on a page fallocated earlier must initialize
 		 * it now, lest undo on failure cancel our earlier guarantee.
 		 */
-		if (sgp != SGP_WRITE && !PageUptodate(page)) {
+		if (mbstype != MBS_WRITE && !PageUptodate(page)) {
 			struct page *head = compound_head(page);
 			int i;
 
@@ -1871,7 +1888,7 @@ clear:
 	}
 
 	/* Perhaps the file has been truncated since we checked */
-	if (sgp <= SGP_CACHE &&
+	if (mbstype <= MBS_CACHE &&
 			((loff_t)index << PAGE_SHIFT) >= i_size_read(inode)) {
 		if (alloced) {
 			ClearPageDirty(page);
@@ -1933,7 +1950,7 @@ static int mbsFS_fault(struct vm_fault *vmf)
 	struct vm_area_struct *vma = vmf->vma;
 	struct inode *inode = file_inode(vma->vm_file);
 	gfp_t gfp = mapping_gfp_mask(inode->i_mapping);
-	enum sgp_type sgp;
+	enum mbs_type mbstype;
 	int error;
 	int ret = VM_FAULT_LOCKED;
 
@@ -1995,15 +2012,15 @@ static int mbsFS_fault(struct vm_fault *vmf)
 		spin_unlock(&inode->i_lock);
 	}
 
-	sgp = SGP_CACHE;
+	mbstype = MBS_CACHE;
 
 	if ((vma->vm_flags & VM_NOHUGEPAGE) ||
 			test_bit(MMF_DISABLE_THP, &vma->vm_mm->flags))
-		sgp = SGP_NOHUGE;
+		mbstype = MBS_NOHUGE;
 	else if (vma->vm_flags & VM_HUGEPAGE)
-		sgp = SGP_HUGE;
+		mbstype = MBS_HUGE;
 
-	error = mbsFS_getpage_gfp(inode, vmf->pgoff, &vmf->page, sgp,
+	error = mbsFS_getpage_gfp(inode, vmf->pgoff, &vmf->page, mbstype,
 			gfp, vma, vmf, &ret);
 	if (error)
 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
@@ -2028,8 +2045,8 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 	get_area = current->mm->get_unmapped_area;
 	addr = get_area(file, uaddr, len, pgoff, flags);
 
-		if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
-	return addr;
+	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
+		return addr;
 	if (IS_ERR_VALUE(addr))
 		return addr;
 	if (addr & ~PAGE_MASK)
@@ -2102,7 +2119,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
-	return mpol_set_shared_policy(&MBS_I(inode)->policy, vma, mpol);
+	return mpol_set_shared_pram_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
 static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
@@ -2112,10 +2129,10 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 	pgoff_t index;
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-	return mpol_shared_policy_lookup(&MBS_I(inode)->policy, index);
+	return mpol_shared_pram_policy_lookup(&MBS_I(inode)->policy, index);
 }
 #endif
-#if 0
+
 int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
 {
 	struct inode *inode = file_inode(file);
@@ -2140,17 +2157,16 @@ out_nomem:
 	spin_unlock_irq(&info->lock);
 	return retval;
 }
-#endif
 
 static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	file_accessed(file);
 	vma->vm_ops = &mbsFS_vm_ops;
-		if (IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE) &&
-				((vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK) <
-				(vma->vm_end & HPAGE_PMD_MASK)) {
-			khugepaged_enter(vma, vma->vm_flags);
-		}
+	if (IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE) &&
+			((vma->vm_start + ~HPAGE_PMD_MASK) & HPAGE_PMD_MASK) <
+			(vma->vm_end & HPAGE_PMD_MASK)) {
+		khugepaged_enter(vma, vma->vm_flags);
+	}
 	return 0;
 }
 
@@ -2176,8 +2192,8 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 		spin_lock_init(&info->lock);
 		info->seals = F_SEAL_SEAL;
 		info->flags = flags & VM_NORESERVE;
-				INIT_LIST_HEAD(&info->shrinklist);
-				INIT_LIST_HEAD(&info->swaplist);
+		INIT_LIST_HEAD(&info->shrinklist);
+		INIT_LIST_HEAD(&info->swaplist);
 		simple_xattrs_init(&info->xattrs);
 		cache_no_acl(inode);
 
@@ -2190,7 +2206,7 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				inode->i_mapping->a_ops = &mbsFS_aops;
 				inode->i_op = &mbsFS_inode_operations;
 				inode->i_fop = &mbsFS_file_operations;
-				mpol_shared_policy_init(&info->policy,
+				mpol_shared_pram_policy_init(&info->policy,
 						mbsFS_get_sbmpol(sbinfo));
 				break;
 			case S_IFDIR:
@@ -2281,9 +2297,9 @@ static int mbsFS_mfill_atomic_pte(struct mm_struct *dst_mm,
 		goto out_release;
 
 	ret = radix_tree_maybe_preload(gfp & GFP_RECLAIM_MASK);
-		if (!ret) {
-			ret = mbsFS_add_to_page_cache(page, mapping, pgoff, NULL);
-			radix_tree_preload_end();
+	if (!ret) {
+		ret = mbsFS_add_to_page_cache(page, mapping, pgoff, NULL);
+		radix_tree_preload_end();
 	}
 	if (ret)
 		goto out_release_uncharge;
@@ -2352,15 +2368,35 @@ int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
 			dst_addr, 0, true, &page);
 }
 
-//#ifdef CONFIG_TMPFS
+#ifdef CONFIG_MBSFS
 static const struct inode_operations mbsFS_symlink_inode_operations;
 static const struct inode_operations mbsFS_short_symlink_operations;
 
-//#ifdef CONFIG_TMPFS_XATTR
-//static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
-//#else
+#ifdef CONFIG_MBSFS_XATTR
+static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
+#else
 #define mbsFS_initxattrs NULL
-//#endif
+#endif
+
+ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+{
+	struct file *file = iocb->ki_filp;
+	struct inode *inode = file->f_mapping->host;
+	ssize_t ret;
+
+	inode_lock(inode);
+	ret = generic_write_checks(iocb, from);
+	if (ret > 0)
+		ret = __generic_file_write_iter(iocb, from);
+	inode_unlock(inode);
+
+	if( !(file->f_mapping->flags & GFP_PRAM) ){
+		if (ret > 0)
+			ret = generic_write_sync(iocb, ret);
+	}
+	return ret;
+}
+EXPORT_SYMBOL(mbsFS_file_write_iter);
 
 	static int
 mbsFS_write_begin(struct file *file, struct address_space *mapping,
@@ -2379,8 +2415,9 @@ mbsFS_write_begin(struct file *file, struct address_space *mapping,
 			return -EPERM;
 	}
 
-	return mbsFS_getpage(inode, index, pagep, SGP_WRITE);
+	return mbsFS_getpage(inode, index, pagep, MBS_WRITE);
 }
+
 	static int
 mbsFS_write_end(struct file *file, struct address_space *mapping,
 		loff_t pos, unsigned len, unsigned copied,
@@ -2424,7 +2461,7 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	struct address_space *mapping = inode->i_mapping;
 	pgoff_t index;
 	unsigned long offset;
-	enum sgp_type sgp = SGP_READ;
+	enum mbs_type mbstype = MBS_READ;
 	int error = 0;
 	ssize_t retval = 0;
 	loff_t *ppos = &iocb->ki_pos;
@@ -2435,7 +2472,7 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	 * and even mark them dirty, so it cannot exceed the max_blocks limit.
 	 */
 	if (!iter_is_iovec(to))
-		sgp = SGP_CACHE;
+		mbstype = MBS_CACHE;
 
 	index = *ppos >> PAGE_SHIFT;
 	offset = *ppos & ~PAGE_MASK;
@@ -2455,14 +2492,14 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 				break;
 		}
 
-		error = mbsFS_getpage(inode, index, &page, sgp);
+		error = mbsFS_getpage(inode, index, &page, mbstype);
 		if (error) {
 			if (error == -EINVAL)
 				error = 0;
 			break;
 		}
 		if (page) {
-			if (sgp == SGP_CACHE)
+			if (mbstype == MBS_CACHE)
 				set_page_dirty(page);
 			unlock_page(page);
 		}
@@ -2621,7 +2658,7 @@ static loff_t mbsFS_file_llseek(struct file *file, loff_t offset, int whence)
  */
 #define MBS_TAG_PINNED        PAGECACHE_TAG_TOWRITE
 #define LAST_SCAN               4       /* about 150ms max */
-#if 0
+
 static void mbsFS_tag_pins(struct address_space *mapping)
 {
 	struct radix_tree_iter iter;
@@ -2727,14 +2764,12 @@ continue_resched:
 
 	return error;
 }
-#endif
 
 #define F_ALL_SEALS (F_SEAL_SEAL | \
 		F_SEAL_SHRINK | \
 		F_SEAL_GROW | \
 		F_SEAL_WRITE)
 
-#if 0
 int mbsFS_add_seals(struct file *file, unsigned int seals)
 {
 	struct inode *inode = file_inode(file);
@@ -2837,7 +2872,6 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-#endif
 
 static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
@@ -2927,7 +2961,7 @@ static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		else if (mbsFS_falloc.nr_unswapped > mbsFS_falloc.nr_falloced)
 			error = -ENOMEM;
 		else
-			error = mbsFS_getpage(inode, index, &page, SGP_FALLOC);
+			error = mbsFS_getpage(inode, index, &page, MBS_FALLOC);
 		if (error) {
 			/* Remove the !PageUptodate pages we added */
 			if (index > start) {
@@ -2950,7 +2984,7 @@ static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		 * If !PageUptodate, leave it that way so that freeable pages
 		 * can be recognized if we need to rollback on error later.
 		 * But set_page_dirty so that memory pressure will swap rather
-		 * than free the pages we are allocating (and SGP_CACHE pages
+		 * than free the pages we are allocating (and MBS_CACHE pages
 		 * might still be clean: we now need to mark those dirty too).
 		 */
 		set_page_dirty(page);
@@ -3247,7 +3281,7 @@ static int mbsFS_symlink(struct inode *dir, struct dentry *dentry, const char *s
 		inode->i_op = &mbsFS_short_symlink_operations;
 	} else {
 		inode_nohighmem(inode);
-		error = mbsFS_getpage(inode, 0, &page, SGP_WRITE);
+		error = mbsFS_getpage(inode, 0, &page, MBS_WRITE);
 		if (error) {
 			iput(inode);
 			return error;
@@ -3288,7 +3322,7 @@ static const char *mbsFS_get_link(struct dentry *dentry,
 			return ERR_PTR(-ECHILD);
 		}
 	} else {
-		error = mbsFS_getpage(inode, 0, &page, SGP_READ);
+		error = mbsFS_getpage(inode, 0, &page, MBS_READ);
 		if (error)
 			return ERR_PTR(error);
 		unlock_page(page);
@@ -3297,8 +3331,7 @@ static const char *mbsFS_get_link(struct dentry *dentry,
 	return page_address(page);
 }
 
-#if 0
-#ifdef CONFIG_TMPFS_XATTR
+#ifdef CONFIG_MBSFS_XATTR
 /*
  * Superblocks without xattr inode operations may get some security.* xattr
  * support from the LSM "for free". As soon as we have any other xattrs
@@ -3376,7 +3409,7 @@ static const struct xattr_handler mbsFS_trusted_xattr_handler = {
 };
 
 static const struct xattr_handler *mbsFS_xattr_handlers[] = {
-#ifdef CONFIG_TMPFS_POSIX_ACL
+#ifdef CONFIG_MBSFS_POSIX_ACL
 	&posix_acl_access_xattr_handler,
 	&posix_acl_default_xattr_handler,
 #endif
@@ -3390,20 +3423,19 @@ static ssize_t mbsFS_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	struct mbsFS_inode_info *info = MBS_I(d_inode(dentry));
 	return simple_xattr_list(d_inode(dentry), &info->xattrs, buffer, size);
 }
-#endif /* CONFIG_TMPFS_XATTR */
-#endif
+#endif /* CONFIG_MBSFS_XATTR */
 
 static const struct inode_operations mbsFS_short_symlink_operations = {
 	.get_link	= simple_get_link,
-#ifdef CONFIG_TMPFS_XATTR
-	//	.listxattr	= mbsFS_listxattr,
+#ifdef CONFIG_MBSFS_XATTR
+	.listxattr	= mbsFS_listxattr,
 #endif
 };
 
 static const struct inode_operations mbsFS_symlink_inode_operations = {
 	.get_link	= mbsFS_get_link,
-#ifdef CONFIG_TMPFS_XATTR
-	//	.listxattr	= mbsFS_listxattr,
+#ifdef CONFIG_MBSFS_XATTR
+	.listxattr	= mbsFS_listxattr,
 #endif
 };
 
@@ -3519,7 +3551,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 			size = memparse(value,&rest);
 			if (*rest == '%') {
 				size <<= PAGE_SHIFT;
-				size *= totalram_pages;
+				size *= totalpram_pages;
 				do_div(size, 100);
 				rest++;
 			}
@@ -3573,10 +3605,10 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 
 #ifdef CONFIG_NUMA
 		} else if (!strcmp(this_char,"mpol")) {
-			mpol_put(mpol);
+			mpol_put_pram(mpol);
 			mpol = NULL;
-			//if (mpol_parse_PRAM(value, &mpol))
-			if (mpol_parse_str(value, &mpol))
+			//if (mpol_parse_str(value, &mpol))
+			if (mpol_parse_str_pram(value, &mpol))
 				goto bad_val;
 #endif
 		} else {
@@ -3673,7 +3705,6 @@ static int mbsFS_show_options(struct seq_file *seq, struct dentry *root)
 
 #define MFD_ALL_FLAGS (MFD_CLOEXEC | MFD_ALLOW_SEALING | MFD_HUGETLB)
 
-#if 0
 SYSCALL_DEFINE2(memfd_create,
 		const char __user *, uname,
 		unsigned int, flags)
@@ -3761,8 +3792,7 @@ err_name:
 	kfree(name);
 	return error;
 }
-#endif /* if 0 */
-//#endif /* CONFIG_TMPFS */
+#endif 
 
 static void mbsFS_put_super(struct super_block *sb)
 {
@@ -3790,20 +3820,27 @@ int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->uid = current_fsuid();
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
-
+#ifdef CONFIG_MBSFS
 	/*
 	 * Per default we only allow half of the physical ram per
 	 * mbsfs instance, limiting inodes to one per page of lowmem;
 	 * but the internal instance is left unlimited.
 	 */
-	sbinfo->max_blocks = mbsFS_default_max_blocks();
-	sbinfo->max_inodes = mbsFS_default_max_inodes();
-	if (mbsFS_parse_options(data, sbinfo, false)) {
-		err = -EINVAL;
-		goto failed;
+	if (!(sb->s_flags & MS_KERNMOUNT)) {
+		sbinfo->max_blocks = mbsFS_default_max_blocks();
+		sbinfo->max_inodes = mbsFS_default_max_inodes();
+		if (mbsFS_parse_options(data, sbinfo, false)) {
+			err = -EINVAL;
+			goto failed;
+		}
+	}else{
+		sb->s_flags |= MS_NOUSER;
 	}
 	sb->s_export_op = &mbsFS_export_ops;
 	sb->s_flags |= MS_NOSEC;
+#else
+	sb->s_flags |= MS_NOUSER;
+#endif
 
 	spin_lock_init(&sbinfo->stat_lock);
 	if (percpu_counter_init(&sbinfo->used_blocks, 0, GFP_KERNEL))
@@ -3818,11 +3855,11 @@ int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_magic = MBSFS_MAGIC;
 	sb->s_op = &mbsFS_ops;
 	sb->s_time_gran = 1;
-#ifdef CONFIG_TMPFS_XATTR
-	//	sb->s_xattr = mbsFS_xattr_handlers;
+#ifdef CONFIG_MBSFS_XATTR
+	sb->s_xattr = mbsFS_xattr_handlers;
 #endif
-#ifdef CONFIG_TMPFS_POSIX_ACL
-	//	sb->s_flags |= MS_POSIXACL;
+#ifdef CONFIG_MBSFS_POSIX_ACL
+	sb->s_flags |= MS_POSIXACL;
 #endif
 	uuid_gen(&sb->s_uuid);
 
@@ -3863,7 +3900,7 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
-		mpol_free_shared_policy(&MBS_I(inode)->policy);
+		mpol_free_shared_pram_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
 
@@ -3889,12 +3926,12 @@ static void mbsFS_destroy_inodecache(void)
 static const struct address_space_operations mbsFS_aops = {
 	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
-	//#ifdef CONFIG_TMPFS
+#ifdef CONFIG_MBSFS
 	.write_begin	= mbsFS_write_begin,
 	.write_end	= mbsFS_write_end,
-	//#endif
+#endif
 #ifdef CONFIG_MIGRATION
-	//	.migratepage	= migrate_page,
+	.migratepage	= migrate_page,
 #endif
 	.error_remove_page = generic_error_remove_page,
 };
@@ -3902,28 +3939,28 @@ static const struct address_space_operations mbsFS_aops = {
 static const struct file_operations mbsFS_file_operations = {
 	.mmap		= mbsFS_mmap,
 	.get_unmapped_area = mbsFS_get_unmapped_area,
-	//#ifdef CONFIG_TMPFS
+#ifdef CONFIG_MBSFS
 	.llseek		= mbsFS_file_llseek,
 	.read_iter	= mbsFS_file_read_iter,
-	.write_iter	= generic_file_write_iter,
+	.write_iter	= mbsFS_file_write_iter,
 	.fsync		= noop_fsync,
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.fallocate	= mbsFS_fallocate,
-	//#endif
+#endif
 };
 
 static const struct inode_operations mbsFS_inode_operations = {
 	.getattr	= mbsFS_getattr,
 	.setattr	= mbsFS_setattr,
-#ifdef CONFIG_TMPFS_XATTR
-	//	.listxattr	= mbsFS_listxattr,
-	//	.set_acl	= simple_set_acl,
+#ifdef CONFIG_MBSFS_XATTR
+	.listxattr	= mbsFS_listxattr,
+	.set_acl	= simple_set_acl,
 #endif
 };
 
 static const struct inode_operations mbsFS_dir_inode_operations = {
-	//#ifdef CONFIG_TMPFS
+#ifdef CONFIG_MBSFS
 	.create		= mbsFS_create,
 	.lookup		= simple_lookup,
 	.link		= mbsFS_link,
@@ -3934,35 +3971,35 @@ static const struct inode_operations mbsFS_dir_inode_operations = {
 	.mknod		= mbsFS_mknod,
 	.rename		= mbsFS_rename2,
 	.tmpfile	= mbsFS_tmpfile,
-	//#endif
-#ifdef CONFIG_TMPFS_XATTR
-	//	.listxattr	= mbsFS_listxattr,
 #endif
-#ifdef CONFIG_TMPFS_POSIX_ACL
-	//	.setattr	= mbsFS_setattr,
-	//	.set_acl	= simple_set_acl,
+#ifdef CONFIG_MBSFS_XATTR
+	.listxattr	= mbsFS_listxattr,
+#endif
+#ifdef CONFIG_MBSFS_POSIX_ACL
+	.setattr	= mbsFS_setattr,
+	.set_acl	= simple_set_acl,
 #endif
 };
 
 static const struct inode_operations mbsFS_special_inode_operations = {
-#ifdef CONFIG_TMPFS_XATTR
-	//	.listxattr	= mbsFS_listxattr,
+#ifdef CONFIG_MBSFS_XATTR
+	.listxattr	= mbsFS_listxattr,
 #endif
-#ifdef CONFIG_TMPFS_POSIX_ACL
-	//	.setattr	= mbsFS_setattr,
-	//	.set_acl	= simple_set_acl,
+#ifdef CONFIG_MBSFS_POSIX_ACL
+	.setattr	= mbsFS_setattr,
+	.set_acl	= simple_set_acl,
 #endif
 };
 
 static const struct super_operations mbsFS_ops = {
 	.alloc_inode	= mbsFS_alloc_inode,
 	.destroy_inode	= mbsFS_destroy_inode,
-	//#ifdef CONFIG_TMPFS
+#ifdef CONFIG_MBSFS
 	.statfs		= mbsFS_statfs,
 	.remount_fs	= mbsFS_remount_fs,
 	.show_options	= mbsFS_show_options,
-	//#endif
-		.evict_inode	= mbsFS_evict_inode,
+#endif
+	.evict_inode	= mbsFS_evict_inode,
 	.drop_inode	= generic_delete_inode,
 	.put_super	= mbsFS_put_super,
 #ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
@@ -4010,7 +4047,7 @@ static int __init mbsFS_init(void)
 {
 	int error;
 
-	/* If rootfs called this, don't re-init */
+	/* don't re-init */
 	if (mbsFS_inode_cachep)
 		return 0;
 
@@ -4023,24 +4060,24 @@ static int __init mbsFS_init(void)
 		pr_err("Could not register mbsfs\n");
 		goto out2;
 	}
-
-	//	mbsFS_mnt = kern_mount(&mbsFS_fs_type);
-	//	if (IS_ERR(mbsFS_mnt)) {
-	//		error = PTR_ERR(mbsFS_mnt);
-	//		pr_err("Could not kern_mount mbsfs\n");
-	//		goto out1;
-	//	}
-
+	/*
+	   mbsFS_mnt = kern_mount(&mbsFS_fs_type);
+	   if (IS_ERR(mbsFS_mnt)) {
+	   error = PTR_ERR(mbsFS_mnt);
+	   pr_err("Could not kern_mount mbsfs\n");
+	   goto out1;
+	   }
+	   */
 #ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
-	//	if (has_transparent_hugepage() && mbsFS_huge > MBS_HUGE_DENY)
-	//		MBS_SB(mbsFS_mnt->mnt_sb)->huge = mbsFS_huge;
-	//	else
-	//		mbsFS_huge = 0; /* just in case it was patched */
+	if (has_transparent_hugepage() && mbsFS_huge > MBS_HUGE_DENY)
+		MBS_SB(mbsFS_mnt->mnt_sb)->huge = mbsFS_huge;
+	else
+		mbsFS_huge = 0; // just in case it was patched 
 #endif
 	return 0;
 
 	//out1:
-	unregister_filesystem(&mbsFS_fs_type);
+	//	unregister_filesystem(&mbsFS_fs_type);
 out2:
 	mbsFS_destroy_inodecache();
 out3:
@@ -4057,7 +4094,7 @@ module_init(mbsFS_init);
 module_exit(mbsFS_exit);
 
 MODULE_AUTHOR("Yongseob");
-MODULE_DESCRIPTION("mbsFS: A Persistent Memory File System mimic tmpfs");
+MODULE_DESCRIPTION("mbsFS: memory bus-connected storage File System");
 MODULE_LICENSE("GPL");
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
 /*$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$*/
@@ -4116,7 +4153,7 @@ struct kobj_attribute mbsFS_enabled_attr =
 __ATTR(mbsFS_enabled, 0644, mbsFS_enabled_show, mbsFS_enabled_store);
 #endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE && CONFIG_SYSFS */
 
-//#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
 bool mbsFS_huge_enabled(struct vm_area_struct *vma)
 {
 	struct inode *inode = file_inode(vma->vm_file);
@@ -4147,7 +4184,7 @@ bool mbsFS_huge_enabled(struct vm_area_struct *vma)
 			return false;
 	}
 }
-//#endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE */
+#endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE */
 
 /* common code */
 
@@ -4289,25 +4326,18 @@ int mbsFS_zero_setup(struct vm_area_struct *vma)
 struct page *mbsFS_read_mapping_page_gfp(struct address_space *mapping,
 		pgoff_t index, gfp_t gfp)
 {
-	//#ifdef CONFIG_MBS
 	struct inode *inode = mapping->host;
 	struct page *page;
 	int error;
 
 	BUG_ON(mapping->a_ops != &mbsFS_aops);
-	error = mbsFS_getpage_gfp(inode, index, &page, SGP_CACHE,
+	error = mbsFS_getpage_gfp(inode, index, &page, MBS_CACHE,
 			gfp, NULL, NULL, NULL);
 	if (error)
 		page = ERR_PTR(error);
 	else
 		unlock_page(page);
 	return page;
-	//#else
-	/*
-	 * The tiny !MBS case uses ramfs without swap
-	 */
-	//	return read_cache_page_gfp(mapping, index, gfp);
-	//#endif
 }
 EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
 
