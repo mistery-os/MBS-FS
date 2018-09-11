@@ -159,7 +159,6 @@ static unsigned long mbsFS_default_max_inodes(void)
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
-#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
@@ -180,6 +179,7 @@ static inline struct mbsFS_sb_info *MBS_SB(struct super_block *sb)
 	return sb->s_fs_info;
 }
 
+#if 0
 /*
  * mbsFS_file_setup pre-accounts the whole fixed size of a VM object,
  * for shared memory and for shared anonymous (/dev/zero) mappings
