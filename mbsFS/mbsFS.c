@@ -263,6 +263,7 @@ static inline void mbsFS_inode_unacct_blocks(struct inode *inode, long pages)
 		percpu_counter_sub(&sbinfo->used_blocks, pages);
 	mbsFS_unacct_blocks(info->flags, pages);
 }
+#endif
 
 static const struct super_operations mbsFS_ops;
 static const struct address_space_operations mbsFS_aops;
@@ -273,6 +274,7 @@ static const struct inode_operations mbsFS_special_inode_operations;
 static const struct vm_operations_struct mbsFS_vm_ops;
 static struct file_system_type mbsFS_fs_type;
 
+#if 0
 bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
 	return vma->vm_ops == &mbsFS_vm_ops;
