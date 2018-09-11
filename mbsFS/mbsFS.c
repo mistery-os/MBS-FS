@@ -109,7 +109,22 @@ static struct vfsmount *mbsFS_mnt;
 extern struct memblock memblock;
 extern struct mempolicy * mpol_shared_pram_policy_lookup(struct shared_pram_policy *sp, unsigned long idx);
 extern int mpol_set_shared_pram_policy(struct shared_pram_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
+extern int user_pram_lock(size_t size, struct user_struct *user);
+extern void user_pram_unlock(size_t size, struct user_struct *user);
+extern void lru_add_drain(void);
+extern void lru_add_drain_all(void);
+
 #define MBSFS_MAGIC             0x20181231      //random number 
+
+//#define is_file_hugepages(file)			false
+static inline struct file *
+hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
+		struct user_struct **user, int creat_flags,
+		int page_size_log)
+{
+	return ERR_PTR(-ENOSYS);
+}
+
 
 /*
  * mbsFS_fallocate communicates with mbsFS_fault or mbsFS_writepage via
@@ -124,15 +139,17 @@ struct mbsFS_falloc {
 	pgoff_t nr_unswapped;	/* how often writepage refused to swap out */
 };
 
-unsigned long totalpram_pages =(unsigned long)( memblock.pram.total_size / PAGE_SIZE);//convert to pages
+unsigned long totalpram_pages;
 
 static unsigned long mbsFS_default_max_blocks(void)
 {
+totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	return totalpram_pages / 2;
 }
 
 static unsigned long mbsFS_default_max_inodes(void)
 {
+totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
 }
 
@@ -1950,13 +1967,13 @@ int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
 
 	spin_lock_irq(&info->lock);
 	if (lock && !(info->flags & VM_LOCKED)) {
-		if (!user_shm_lock(inode->i_size, user))
+		if (!user_pram_lock(inode->i_size, user))
 			goto out_nomem;
 		info->flags |= VM_LOCKED;
 		mapping_set_unevictable(file->f_mapping);
 	}
 	if (!lock && (info->flags & VM_LOCKED) && user) {
-		user_shm_unlock(inode->i_size, user);
+		user_pram_unlock(inode->i_size, user);
 		info->flags &= ~VM_LOCKED;
 		mapping_clear_unevictable(file->f_mapping);
 	}
