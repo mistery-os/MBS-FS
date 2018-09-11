@@ -3270,6 +3270,8 @@ static const struct inode_operations mbsFS_symlink_inode_operations = {
 #endif
 };
 
+#endif
+
 static struct dentry *mbsFS_get_parent(struct dentry *child)
 {
 	return ERR_PTR(-ESTALE);
@@ -3342,7 +3344,6 @@ static const struct export_operations mbsFS_export_ops = {
 	.fh_to_dentry	= mbsFS_fh_to_dentry,
 };
 
-#endif
 
 static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
