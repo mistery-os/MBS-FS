@@ -3833,8 +3833,12 @@ static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 
 static void mbsfs_kill_sb(struct super_block *sb)
 {
-	kfree(sb->s_fs_info);
-	kill_litter_super(sb);
+	dev_t dev = sb->s_dev;
+	generic_shutdown_super(sb);
+	free_anon_bdev(dev);
+
+//	kfree(sb->s_fs_info);
+//	kill_litter_super(sb);
 }
 
 static struct file_system_type mbsFS_fs_type = {
