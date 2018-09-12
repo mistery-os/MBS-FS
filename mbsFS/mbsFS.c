@@ -1489,8 +1489,8 @@ repeat:
 		put_page(page);
 		page = NULL;
 	}
-	if (page || (mbstype == MBS_READ && !swap.val)) {
-	//if (page || (mbstype == MBS_READ )) {
+	//if (page || (mbstype == MBS_READ && !swap.val)) {
+	if (page || (mbstype == MBS_READ )) {
 		*pagep = page;
 		return 0;
 	}
@@ -1501,7 +1501,7 @@ repeat:
 	 */
 	sbinfo = MBS_SB(inode->i_sb);
 	charge_mm = vma ? vma->vm_mm : current->mm;
-
+#if 0
 	if (swap.val) {
 		/* Look it up and read it in.. */
 		page = lookup_swap_cache(swap, NULL, 0);
@@ -1579,6 +1579,7 @@ repeat:
 		swap_free(swap);
 
 	} else
+#endif
 	{
 		if (vma && userfaultfd_missing(vma)) {
 			*fault_type = handle_userfault(vmf, VM_UFFD_MISSING);
@@ -3882,7 +3883,7 @@ out3:
 static void __exit mbsFS_exit(void)
 {
 	pr_info("mbsFS_exit\n");
-	//	unregister_filesystem(&mbsFS_fs_type);
+	unregister_filesystem(&mbsFS_fs_type);
 	mbsFS_destroy_inodecache();
 }
 
