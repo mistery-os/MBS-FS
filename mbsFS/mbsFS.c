@@ -3836,9 +3836,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	dev_t dev = sb->s_dev;
 	generic_shutdown_super(sb);
 	free_anon_bdev(dev);
-
-//	kfree(sb->s_fs_info);
-//	kill_litter_super(sb);
+	pr_info("mbsFS_kill_sb successfully finished\n");
 }
 
 static struct file_system_type mbsFS_fs_type = {
