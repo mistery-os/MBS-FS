@@ -108,8 +108,8 @@ static struct vfsmount *mbsFS_mnt;
 //extern s32 vm_committed_as_batch;
 //>>>
 extern struct memblock memblock;
-extern struct mempolicy * mpol_mbsfs_pram_policy_lookup(struct mbsfs_pram_policy *sp, unsigned long idx);
-extern int mpol_set_mbsfs_pram_policy(struct mbsfs_pram_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
+extern struct mempolicy * mpol_mbsfs_policy_lookup(struct mbsfs_policy *sp, unsigned long idx);
+extern int mpol_set_mbsfs_policy(struct mbsfs_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
 extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
@@ -1257,12 +1257,12 @@ static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 	/* Bias interleave by inode number to distribute better across nodes */
 	vma->vm_pgoff = index + info->vfs_inode.i_ino;
 	vma->vm_ops = NULL;
-	vma->vm_policy = mpol_mbsfs_pram_policy_lookup(&info->policy, index);
+	vma->vm_policy = mpol_mbsfs_policy_lookup(&info->policy, index);
 }
 
 static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 {
-	/* Drop reference taken by mpol_mbsfs_pram_policy_lookup() */
+	/* Drop reference taken by mpol_mbsfs_policy_lookup() */
 	mpol_cond_put_pram(vma->vm_policy);
 }
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
@@ -1503,7 +1503,7 @@ repeat:
 	 */
 	sbinfo = MBS_SB(inode->i_sb);
 	charge_mm = vma ? vma->vm_mm : current->mm;
-//#if 0
+#if 0
 	if (swap.val) {
 		/* Look it up and read it in.. */
 		page = lookup_swap_cache(swap, NULL, 0);
@@ -1581,7 +1581,7 @@ repeat:
 		swap_free(swap);
 
 	} else
-//#endif
+#endif
 	{
 		if (vma && userfaultfd_missing(vma)) {
 			*fault_type = handle_userfault(vmf, VM_UFFD_MISSING);
@@ -1951,7 +1951,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
-	return mpol_set_mbsfs_pram_policy(&MBS_I(inode)->policy, vma, mpol);
+	return mpol_set_mbsfs_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
 static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
@@ -1961,7 +1961,7 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 	pgoff_t index;
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-	return mpol_mbsfs_pram_policy_lookup(&MBS_I(inode)->policy, index);
+	return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
 }
 
 int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
@@ -2032,7 +2032,7 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				inode->i_mapping->a_ops = &mbsFS_aops;
 				inode->i_op = &mbsFS_inode_operations;
 				inode->i_fop = &mbsFS_file_operations;
-				mpol_mbsfs_pram_policy_init(&info->policy,
+				mpol_mbsfs_policy_init(&info->policy,
 						mbsFS_get_sbmpol(sbinfo));
 				break;
 			case S_IFDIR:
@@ -2047,7 +2047,7 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				 * Must not load anything in the rbtree,
 				 * mpol_free_mbsfs_policy will not be called.
 				 */
-				mpol_mbsfs_pram_policy_init(&info->policy, NULL);
+				mpol_mbsfs_policy_init(&info->policy, NULL);
 				break;
 		}
 	} else {
@@ -3375,7 +3375,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		}
 
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
-		//totalpram_pages=totalram_pages;
+
 		if (!strcmp(this_char,"size")) {
 			unsigned long long size;
 			size = memparse(value,&rest);
@@ -3638,7 +3638,7 @@ int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
 	/*
-	 * Per default we only allow half of the physical ram per
+	 * Per default we allow the physical pram per
 	 * mbsfs instance, limiting inodes to one per page of lowmem;
 	 * but the internal instance is left unlimited.
 	 */
@@ -3713,7 +3713,7 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
-		mpol_free_mbsfs_pram_policy(&MBS_I(inode)->policy);
+		mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
 
@@ -3826,7 +3826,7 @@ static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 	if (IS_ERR(entry))
 		pr_err("mbsFS mount failed\n");
 	else
-		pr_debug("mbsFS mounted\n");
+		pr_info("mbsFS mounted successfully.\n");
 
 	return entry;
 }
@@ -3849,7 +3849,6 @@ static int __init mbsFS_init(void)
 {
 	int error;
 
-	pr_info("mbsFS_init\n");
 	/* don't re-init */
 	if (mbsFS_inode_cachep)
 		return 0;
@@ -3861,6 +3860,7 @@ static int __init mbsFS_init(void)
 		pr_err("Could not register mbsfs\n");
 		goto out1;
 	}
+	pr_info("mbsFS_init suceessed.\n");
 	return 0;
 out1:
 	mbsFS_destroy_inodecache();
@@ -3870,9 +3870,9 @@ out2:
 }
 static void __exit mbsFS_exit(void)
 {
-	pr_info("mbsFS_exit\n");
 	unregister_filesystem(&mbsFS_fs_type);
 	mbsFS_destroy_inodecache();
+	pr_info("mbsFS_exit successed.\n");
 }
 
 module_init(mbsFS_init);
