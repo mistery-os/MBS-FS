@@ -1314,10 +1314,10 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	//gfp |= GFP_PRAM;
+	gfp = GFP_PRAM;
+	page = alloc_page_vma_pram(gfp, &pvma, 0); 
 	//page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
-	//page = alloc_page_vma_pram(gfp, &pvma, 0); 
-	page = alloc_page_vma(gfp, &pvma, 0);
+	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
 	return page;
@@ -3441,7 +3441,7 @@ bad_val:
 	pr_err("mbsfs: Bad value '%s' for mount option '%s'\n",
 			value, this_char);
 error:
-	mpol_put(mpol);
+	mpol_put_pram(mpol);
 	return 1;
 
 }
@@ -3483,7 +3483,7 @@ static int mbsFS_remount_fs(struct super_block *sb, int *flags, char *data)
 	 * Preserve previous mempolicy unless mpol remount option was specified.
 	 */
 	if (config.mpol) {
-		mpol_put(sbinfo->mpol);
+		mpol_put_pram(sbinfo->mpol);
 		sbinfo->mpol = config.mpol;	/* transfers initial ref */
 	}
 out:
@@ -3616,7 +3616,7 @@ static void mbsFS_put_super(struct super_block *sb)
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
-	mpol_put(sbinfo->mpol);
+	mpol_put_pram(sbinfo->mpol);
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
