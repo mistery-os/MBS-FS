@@ -149,6 +149,7 @@ static unsigned long mbsFS_default_max_blocks(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	//totalpram_pages=totalram_pages;
+	return totalpram_pages; 
 	return totalpram_pages / 2;
 }
 
@@ -156,7 +157,7 @@ static unsigned long mbsFS_default_max_inodes(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 //	totalpram_pages=totalram_pages;
-	return min(totalpram_pages - totalhigh_pages, totalpram_pages / 2);
+	return min(totalpram_pages - totalhigh_pages, totalpram_pages);
 }
 
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
@@ -1313,7 +1314,7 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	gfp = GFP_PRAM;
+	gfp |= GFP_PRAM;
 	//page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
 	page = alloc_page_vma_pram(gfp, &pvma, 0); 
 	mbsFS_pseudo_vma_destroy(&pvma);
@@ -3420,7 +3421,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 			if (!gid_valid(sbinfo->gid))
 				goto bad_val;
 #ifdef CONFIG_NUMA
-		} else if (!strcmp(this_char,"mpol")) {
+		} else if (!strcmp(this_char,"flag")) {
 			mpol_put_pram(mpol);
 			mpol = NULL;
 			//if (mpol_parse_str(value, &mpol))
