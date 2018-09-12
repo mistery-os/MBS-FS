@@ -108,8 +108,8 @@ static struct vfsmount *mbsFS_mnt;
 //extern s32 vm_committed_as_batch;
 //>>>
 extern struct memblock memblock;
-extern struct mempolicy * mpol_shared_pram_policy_lookup(struct shared_pram_policy *sp, unsigned long idx);
-extern int mpol_set_shared_pram_policy(struct shared_pram_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
+extern struct mempolicy * mpol_mbsfs_pram_policy_lookup(struct mbsfs_pram_policy *sp, unsigned long idx);
+extern int mpol_set_mbsfs_pram_policy(struct mbsfs_pram_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
 extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
@@ -182,7 +182,7 @@ static inline struct mbsFS_sb_info *MBS_SB(struct super_block *sb)
 
 /*
  * mbsFS_file_setup pre-accounts the whole fixed size of a VM object,
- * for shared memory and for shared anonymous (/dev/zero) mappings
+ * for MBS memory and for MBS anonymous (/dev/zero) mappings
  * (unless MAP_NORESERVE and sysctl_overcommit_memory <= 1),
  * consistent with the pre-accounting of private mappings ...
  */
@@ -1227,7 +1227,7 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 	if (!mpol || mpol->mode == MPOL_DEFAULT)
 		return;		/* show nothing */
 
-	mpol_to_str(buffer, sizeof(buffer), mpol);
+	mpol_to_str_pram(buffer, sizeof(buffer), mpol);
 
 	seq_printf(seq, ",mpol=%s", buffer);
 }
@@ -1257,13 +1257,13 @@ static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 	/* Bias interleave by inode number to distribute better across nodes */
 	vma->vm_pgoff = index + info->vfs_inode.i_ino;
 	vma->vm_ops = NULL;
-	vma->vm_policy = mpol_shared_pram_policy_lookup(&info->policy, index);
+	vma->vm_policy = mpol_mbsfs_pram_policy_lookup(&info->policy, index);
 }
 
 static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 {
-	/* Drop reference taken by mpol_shared_pram_policy_lookup() */
-	mpol_cond_put(vma->vm_policy);
+	/* Drop reference taken by mpol_mbsfs_pram_policy_lookup() */
+	mpol_cond_put_pram(vma->vm_policy);
 }
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
@@ -1362,7 +1362,7 @@ failed:
  * we may need to copy to a suitable page before moving to filecache.
  *
  * In a future release, this may well be extended to respect cpuset and
- * NUMA mempolicy, and applied also to anonymous pages in do_swap_page();
+ * NUSA prampolicy, and applied also to anonymous pages in do_swap_page();
  * but for now it is a simple matter of zone.
  */
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp)
@@ -1503,7 +1503,7 @@ repeat:
 	 */
 	sbinfo = MBS_SB(inode->i_sb);
 	charge_mm = vma ? vma->vm_mm : current->mm;
-#if 0
+//#if 0
 	if (swap.val) {
 		/* Look it up and read it in.. */
 		page = lookup_swap_cache(swap, NULL, 0);
@@ -1581,7 +1581,7 @@ repeat:
 		swap_free(swap);
 
 	} else
-#endif
+//#endif
 	{
 		if (vma && userfaultfd_missing(vma)) {
 			*fault_type = handle_userfault(vmf, VM_UFFD_MISSING);
@@ -1909,7 +1909,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 		} else {
 			/*
 			 * Called directly from mm/mmap.c, or drivers/char/mem.c
-			 * for "/dev/zero", to create a shared anonymous object.
+			 * for "/dev/zero", to create a MBS anonymous object.
 			 */
 			if (IS_ERR(mbsFS_mnt))
 				return addr;
@@ -1951,7 +1951,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
-	return mpol_set_shared_pram_policy(&MBS_I(inode)->policy, vma, mpol);
+	return mpol_set_mbsfs_pram_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
 static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
@@ -1961,7 +1961,7 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 	pgoff_t index;
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-	return mpol_shared_pram_policy_lookup(&MBS_I(inode)->policy, index);
+	return mpol_mbsfs_pram_policy_lookup(&MBS_I(inode)->policy, index);
 }
 
 int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
@@ -2032,7 +2032,7 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				inode->i_mapping->a_ops = &mbsFS_aops;
 				inode->i_op = &mbsFS_inode_operations;
 				inode->i_fop = &mbsFS_file_operations;
-				mpol_shared_pram_policy_init(&info->policy,
+				mpol_mbsfs_pram_policy_init(&info->policy,
 						mbsFS_get_sbmpol(sbinfo));
 				break;
 			case S_IFDIR:
@@ -2045,9 +2045,9 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 			case S_IFLNK:
 				/*
 				 * Must not load anything in the rbtree,
-				 * mpol_free_shared_policy will not be called.
+				 * mpol_free_mbsfs_policy will not be called.
 				 */
-				mpol_shared_pram_policy_init(&info->policy, NULL);
+				mpol_mbsfs_pram_policy_init(&info->policy, NULL);
 				break;
 		}
 	} else {
@@ -2608,7 +2608,7 @@ int mbsFS_add_seals(struct file *file, unsigned int seals)
 	 * access to a specific subset of file operations. Seals can only be
 	 * added, but never removed. This way, mutually untrusted parties can
 	 * share common memory regions with a well-defined policy. A malicious
-	 * peer can thus never perform unwanted operations on a shared object.
+	 * peer can thus never perform unwanted operations on a MBS object.
 	 *
 	 * Seals are only supported on special mbsFS-files and always affect
 	 * the whole underlying inode. Once a seal is set, it may prevent some
@@ -3480,7 +3480,7 @@ static int mbsFS_remount_fs(struct super_block *sb, int *flags, char *data)
 	sbinfo->free_inodes = config.max_inodes - inodes;
 
 	/*
-	 * Preserve previous mempolicy unless mpol remount option was specified.
+	 * Preserve previous prampolicy unless mpol remount option was specified.
 	 */
 	if (config.mpol) {
 		mpol_put_pram(sbinfo->mpol);
@@ -3713,7 +3713,7 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
-		mpol_free_shared_pram_policy(&MBS_I(inode)->policy);
+		mpol_free_mbsfs_pram_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
 
@@ -3855,30 +3855,16 @@ static int __init mbsFS_init(void)
 		return 0;
 	error = mbsFS_init_inodecache();
 	if (error)
-		goto out3;
+		goto out2;
 	error = register_filesystem(&mbsFS_fs_type);
 	if (error) {
 		pr_err("Could not register mbsfs\n");
-		goto out2;
+		goto out1;
 	}
-#if 0
-	/*
-	   mbsFS_mnt = kern_mount(&mbsFS_fs_type);
-	   if (IS_ERR(mbsFS_mnt)) {
-	   error = PTR_ERR(mbsFS_mnt);
-	   pr_err("Could not kern_mount mbsfs\n");
-	   goto out1;
-	   }
-	   */
-#endif
 	return 0;
-#if 0
-	//out1:
-	//	unregister_filesystem(&mbsFS_fs_type);
-#endif
-out2:
+out1:
 	mbsFS_destroy_inodecache();
-out3:
+out2:
 	mbsFS_mnt = ERR_PTR(error);
 	return error;
 }
@@ -3987,7 +3973,7 @@ struct file *mbsFS_file_setup(const char *name, loff_t size, unsigned long flags
 EXPORT_SYMBOL_GPL(mbsFS_file_setup);
 
 /**
- * mbsFS_zero_setup - setup a shared anonymous mapping
+ * mbsFS_zero_setup - setup a MBS anonymous mapping
  * @vma: the vma to be mmapped is prepared by do_mmap_pgoff
  */
 int mbsFS_zero_setup(struct vm_area_struct *vma)
