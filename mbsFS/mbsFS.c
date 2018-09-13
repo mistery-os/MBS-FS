@@ -1229,7 +1229,7 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 
 	mpol_to_str_pram(buffer, sizeof(buffer), mpol);
 
-	seq_printf(seq, ",mpol=%s", buffer);
+	seq_printf(seq, ",flag=%s", buffer);
 }
 
 
@@ -2855,7 +2855,7 @@ static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
 /*
  * File creation. Allocate an inode, and we're done..
  */
-static int
+	static int
 mbsFS_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
 	struct inode *inode;
@@ -3374,7 +3374,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 			goto error;
 		}
 
-	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+		totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 
 		if (!strcmp(this_char,"size")) {
 			unsigned long long size;
@@ -3837,8 +3837,12 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	generic_shutdown_super(sb);
 	free_anon_bdev(dev);
 	pr_info("mbsFS_kill_sb successfully finished\n");
+	/*
+	   if (sb->s_root)
+	   d_genocide(sb->s_root);
+	   kill_anon_super(sb);
+	   */
 }
-
 static struct file_system_type mbsFS_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "mbsfs",
