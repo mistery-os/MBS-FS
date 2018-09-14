@@ -1277,6 +1277,7 @@ static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 
 	return page;
 }
+#if 0
 static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1309,6 +1310,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	//prep_transhuge_page(page);
 	return page;
 }
+#endif
 static struct page *mbsFS_alloc_page(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1317,8 +1319,8 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
 	gfp = GFP_PRAM;
-	page = alloc_pram_vma(gfp, &pvma, 0); 
-	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	//page = alloc_pram_vma(gfp, &pvma, 0); 
+	page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
@@ -1340,9 +1342,9 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
-	if (huge)
-		page = mbsFS_alloc_hugepage(gfp, info, index);
-	else
+//	if (huge)
+//		page = mbsFS_alloc_hugepage(gfp, info, index);
+//	else
 		page = mbsFS_alloc_page(gfp, info, index);
 	if (page) {
 		__SetPageLocked(page);
