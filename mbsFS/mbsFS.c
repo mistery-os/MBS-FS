@@ -3833,15 +3833,15 @@ static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 
 static void mbsfs_kill_sb(struct super_block *sb)
 {
-	dev_t dev = sb->s_dev;
-	generic_shutdown_super(sb);
-	free_anon_bdev(dev);
-	pr_info("mbsFS_kill_sb successfully finished\n");
 	/*
-	   if (sb->s_root)
-	   d_genocide(sb->s_root);
-	   kill_anon_super(sb);
+	   dev_t dev = sb->s_dev;
+	   generic_shutdown_super(sb);
+	   free_anon_bdev(dev);
 	   */
+	if (sb->s_root)
+		d_genocide(sb->s_root);
+	kill_anon_super(sb);
+	pr_info("mbsFS_kill_sb successfully finished\n");
 }
 static struct file_system_type mbsFS_fs_type = {
 	.owner		= THIS_MODULE,
@@ -3977,7 +3977,7 @@ struct file *mbsFS_file_setup(const char *name, loff_t size, unsigned long flags
 	return __mbsFS_file_setup(name, size, flags, 0);
 }
 EXPORT_SYMBOL_GPL(mbsFS_file_setup);
-
+#if 0
 /**
  * mbsFS_zero_setup - setup a MBS anonymous mapping
  * @vma: the vma to be mmapped is prepared by do_mmap_pgoff
@@ -4004,7 +4004,7 @@ int mbsFS_zero_setup(struct vm_area_struct *vma)
 
 	return 0;
 }
-
+#endif
 /**
  * mbsFS_read_mapping_page_gfp - read into page cache, using specified page allocation flags.
  * @mapping:	the page's address_space
