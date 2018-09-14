@@ -1300,7 +1300,9 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	rcu_read_unlock();
 
 	mbsFS_pseudo_vma_init(&pvma, info, hindex);
-	page = alloc_pages_vma(gfp | __GFP_COMP | __GFP_NORETRY | __GFP_NOWARN,
+	//page = alloc_pages_vma(gfp | __GFP_COMP | __GFP_NORETRY | __GFP_NOWARN,
+	//		HPAGE_PMD_ORDER, &pvma, 0, numa_node_id(), true);
+	page = alloc_prams_vma(gfp | __GFP_COMP | __GFP_NORETRY | __GFP_NOWARN,
 			HPAGE_PMD_ORDER, &pvma, 0, numa_node_id(), true);
 	mbsFS_pseudo_vma_destroy(&pvma);
 	//if (page)
@@ -1315,8 +1317,8 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
 	gfp = GFP_PRAM;
-	page = alloc_page_vma_pram(gfp, &pvma, 0); 
-	//page = alloc_pages_vma_pram(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_pram_vma(gfp, &pvma, 0); 
+	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
