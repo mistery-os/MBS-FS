@@ -462,6 +462,7 @@ static int mbsFS_add_to_page_cache(struct page *page,
 	page->index = index;
 
 	spin_lock_irq(&mapping->tree_lock);
+#if 0
 	if (PageTransHuge(page)) {
 		void __rcu **results;
 		pgoff_t idx;
@@ -482,19 +483,21 @@ static int mbsFS_add_to_page_cache(struct page *page,
 			}
 			count_vm_event(THP_FILE_ALLOC);
 		}
-	} else if (!expected) {
-		error = radix_tree_insert(&mapping->page_tree, index, page);
-	} else {
-		error = mbsFS_radix_tree_replace(mapping, index, expected,
-				page);
-	}
+	} else
+#endif
+		if (!expected) {
+			error = radix_tree_insert(&mapping->page_tree, index, page);
+		} else {
+			error = mbsFS_radix_tree_replace(mapping, index, expected,
+					page);
+		}
 
 	if (!error) {
 		mapping->nrpages += nr;
 		if (PageTransHuge(page))
-			__inc_node_page_state(page, NR_SHMEM_THPS);
+			__inc_node_page_state(page, NR_MBSFS_THPS);
 		__mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);
-		__mod_node_page_state(page_pgdat(page), NR_SHMEM, nr);
+		__mod_node_page_state(page_pgdat(page), NR_MBSFS, nr);
 		spin_unlock_irq(&mapping->tree_lock);
 	} else {
 		page->mapping = NULL;
@@ -519,7 +522,7 @@ static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 	page->mapping = NULL;
 	mapping->nrpages--;
 	__dec_node_page_state(page, NR_FILE_PAGES);
-	__dec_node_page_state(page, NR_SHMEM);
+	__dec_node_page_state(page, NR_MBSFS);
 	spin_unlock_irq(&mapping->tree_lock);
 	put_page(page);
 	BUG_ON(error);
@@ -1342,10 +1345,10 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
-//	if (huge)
-//		page = mbsFS_alloc_hugepage(gfp, info, index);
-//	else
-		page = mbsFS_alloc_page(gfp, info, index);
+	//	if (huge)
+	//		page = mbsFS_alloc_hugepage(gfp, info, index);
+	//	else
+	page = mbsFS_alloc_page(gfp, info, index);
 	if (page) {
 		__SetPageLocked(page);
 		__SetPageSwapBacked(page);
@@ -3741,7 +3744,7 @@ static void mbsFS_destroy_inodecache(void)
 }
 
 static const struct address_space_operations mbsFS_aops = {
-	.writepage	= mbsFS_writepage,
+//	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsFS_write_begin,
 	.write_end	= mbsFS_write_end,
@@ -3830,7 +3833,7 @@ static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 	if (IS_ERR(entry))
 		pr_err("mbsFS mount failed\n");
 	else
-		pr_info("mbsFS mounted successfully.\n");
+		pr_debug("mbsFS mounted successfully.\n");
 
 	return entry;
 }
@@ -3845,7 +3848,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	if (sb->s_root)
 		d_genocide(sb->s_root);
 	kill_anon_super(sb);
-	pr_info("mbsFS_kill_sb successfully finished\n");
+	pr_debug("mbsFS_kill_sb successfully finished\n");
 }
 static struct file_system_type mbsFS_fs_type = {
 	.owner		= THIS_MODULE,
@@ -3870,7 +3873,7 @@ static int __init mbsFS_init(void)
 		pr_err("Could not register mbsfs\n");
 		goto out1;
 	}
-	pr_info("mbsFS_init suceessed.\n");
+	pr_debug("mbsFS_init suceessed.\n");
 	return 0;
 out1:
 	mbsFS_destroy_inodecache();
@@ -3882,7 +3885,7 @@ static void __exit mbsFS_exit(void)
 {
 	unregister_filesystem(&mbsFS_fs_type);
 	mbsFS_destroy_inodecache();
-	pr_info("mbsFS_exit successed.\n");
+	pr_debug("mbsFS_exit successed.\n");
 }
 
 module_init(mbsFS_init);
