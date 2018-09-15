@@ -123,11 +123,6 @@ extern void lru_add_drain_all(void);
 #define is_file_hugepages(file)			false
 //####################
 //####################
-#define mbsFS_sb_info			shmem_sb_info
-#define mpol_mbsfs_policy_lookup	mpol_shared_policy_lookup
-#define mpol_cond_put_pram		mpol_cond_put
-#define mpol_mbsfs_policy_init		mpol_shared_policy_init
-#define					shmem_get_sbmpol
 //####################
 //####################
 
