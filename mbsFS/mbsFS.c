@@ -114,7 +114,7 @@ extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
 extern void lru_add_drain_all(void);
-static struct mempolicy default_pram_policy;
+extern static struct mempolicy default_pram_policy;
 //extern struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
 //				struct user_struct **user, int creat_flags,
 //				int page_size_log);
@@ -3357,13 +3357,15 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
 	char *this_char, *value, *rest;
+#if 0
 	//struct mempolicy *mpol = NULL;
 	static struct mempolicy pram_policy = {
 		.refcnt = ATOMIC_INIT(1), /* never free it */
 		.mode = MPOL_PREFERRED,
 		.flags = MPOL_F_LOCAL,
 	};
-	struct mempolicy *mpol = &pram_policy;
+#endif
+	struct mempolicy *mpol = &default_pram_policy;
 	uid_t uid;
 	gid_t gid;
 
