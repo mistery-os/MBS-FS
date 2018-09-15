@@ -47,7 +47,6 @@ static struct vfsmount *mbsFS_mnt;
 #include <linux/module.h>
 #include <linux/kernel.h>
 //#########################
-#if 0
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/posix_acl.h>
@@ -80,7 +79,6 @@ static struct vfsmount *mbsFS_mnt;
 
 #include <linux/uaccess.h>
 #include <asm/pgtable.h>
-#endif
 //#########################
 //#########################
 //#########################
