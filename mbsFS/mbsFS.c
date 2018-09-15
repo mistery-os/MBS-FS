@@ -121,6 +121,16 @@ extern void lru_add_drain_all(void);
 #define MBSFS_MAGIC             0x20181231      //random number 
 
 #define is_file_hugepages(file)			false
+//####################
+//####################
+#define mbsFS_sb_info			shmem_sb_info
+#define mpol_mbsfs_policy_lookup	mpol_shared_policy_lookup
+#define mpol_cond_put_pram		mpol_cond_put
+#define mpol_mbsfs_policy_init		mpol_shared_policy_init
+#define					shmem_get_sbmpol
+//####################
+//####################
+
 //static inline struct file *
 //hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 //		struct user_struct **user, int creat_flags,
@@ -1230,7 +1240,8 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 	if (!mpol || mpol->mode == MPOL_DEFAULT)
 		return;		/* show nothing */
 
-	mpol_to_str_pram(buffer, sizeof(buffer), mpol);
+	//mpol_to_str_pram(buffer, sizeof(buffer), mpol);
+	mpol_to_str(buffer, sizeof(buffer), mpol);
 
 	seq_printf(seq, ",flag=%s", buffer);
 }

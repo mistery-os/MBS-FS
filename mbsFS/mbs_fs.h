@@ -23,7 +23,7 @@ struct mbsFS_inode_info {
 	struct simple_xattrs	xattrs;		/* list of xattrs */
 	struct inode		vfs_inode;
 };
-
+#if 0
 struct mbsFS_sb_info {
 	unsigned long max_blocks;   /* How many blocks are allowed */
 	struct percpu_counter used_blocks;  /* How many are allocated */
@@ -39,7 +39,7 @@ struct mbsFS_sb_info {
 	struct list_head shrinklist;  /* List of shinkable inodes */
 	unsigned long shrinklist_len; /* Length of shrinklist */
 };
-
+#endif
 static inline struct mbsFS_inode_info *MBS_I(struct inode *inode)
 {
 	return container_of(inode, struct mbsFS_inode_info, vfs_inode);
