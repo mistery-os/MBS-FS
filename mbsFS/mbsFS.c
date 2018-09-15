@@ -495,7 +495,7 @@ static int mbsFS_add_to_page_cache(struct page *page,
 	if (!error) {
 		mapping->nrpages += nr;
 		if (PageTransHuge(page))
-			__inc_node_page_state(page, NR_MBSFS_THPS);
+			__inc_node_page_state(page, NR_SHMEM_THPS);
 		__mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);
 		__mod_node_page_state(page_pgdat(page), NR_MBSFS, nr);
 		spin_unlock_irq(&mapping->tree_lock);
