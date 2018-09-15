@@ -108,8 +108,8 @@ static struct vfsmount *mbsFS_mnt;
 //extern s32 vm_committed_as_batch;
 //>>>
 extern struct memblock memblock;
-extern struct mempolicy * mpol_mbsfs_policy_lookup(struct mbsfs_policy *sp, unsigned long idx);
-extern int mpol_set_mbsfs_policy(struct mbsfs_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
+//extern struct mempolicy * mpol_mbsfs_policy_lookup(struct mbsfs_policy *sp, unsigned long idx);
+//extern int mpol_set_mbsfs_policy(struct mbsfs_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
 extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
@@ -1964,7 +1964,7 @@ static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
 	return mpol_set_shared_policy(&MBS_I(inode)->policy, vma, mpol);
-	return mpol_set_mbsfs_policy(&MBS_I(inode)->policy, vma, mpol);
+	//return mpol_set_mbsfs_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
 static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
@@ -1975,7 +1975,7 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
 	return mpol_shared_policy_lookup(&MBS_I(inode)->policy, index);
-	return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
+	//return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
 }
 
 int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
@@ -2047,7 +2047,7 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				inode->i_op = &mbsFS_inode_operations;
 				inode->i_fop = &mbsFS_file_operations;
 				mpol_shared_policy_init(&info->policy,
-						shmem_get_sbmpol(sbinfo));
+						mbsFS_get_sbmpol(sbinfo));
 				//mpol_mbsfs_policy_init(&info->policy,
 				//		mbsFS_get_sbmpol(sbinfo));
 				break;
