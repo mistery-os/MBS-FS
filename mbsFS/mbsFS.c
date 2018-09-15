@@ -1963,7 +1963,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
-	return mpol_set_shared_policy(&SHMEM_I(inode)->policy, vma, mpol);
+	return mpol_set_shared_policy(&MBS_I(inode)->policy, vma, mpol);
 	return mpol_set_mbsfs_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
@@ -1974,7 +1974,7 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 	pgoff_t index;
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
-	return mpol_shared_policy_lookup(&SHMEM_I(inode)->policy, index);
+	return mpol_shared_policy_lookup(&MBS_I(inode)->policy, index);
 	return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
 }
 
@@ -3742,7 +3742,7 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
-		mpol_free_shared_policy(&SHMEM_I(inode)->policy);
+		mpol_free_shared_policy(&MBS_I(inode)->policy);
 		//mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
