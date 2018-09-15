@@ -47,6 +47,7 @@ static struct vfsmount *mbsFS_mnt;
 #include <linux/module.h>
 #include <linux/kernel.h>
 //#########################
+#if 0
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/posix_acl.h>
@@ -79,6 +80,7 @@ static struct vfsmount *mbsFS_mnt;
 
 #include <linux/uaccess.h>
 #include <asm/pgtable.h>
+#endif
 //#########################
 //#########################
 //#########################
@@ -1255,10 +1257,6 @@ static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 	return mpol;
 }
 
-#ifndef CONFIG_NUMA
-#define vm_policy vm_private_data
-#endif
-
 static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1267,13 +1265,15 @@ static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 	/* Bias interleave by inode number to distribute better across nodes */
 	vma->vm_pgoff = index + info->vfs_inode.i_ino;
 	vma->vm_ops = NULL;
-	vma->vm_policy = mpol_mbsfs_policy_lookup(&info->policy, index);
+	vma->vm_policy = mpol_shared_policy_lookup(&info->policy, index);
+	//vma->vm_policy = mpol_mbsfs_policy_lookup(&info->policy, index);
 }
 
 static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 {
 	/* Drop reference taken by mpol_mbsfs_policy_lookup() */
-	mpol_cond_put_pram(vma->vm_policy);
+	mpol_cond_put(vma->vm_policy);
+	//mpol_cond_put_pram(vma->vm_policy);
 }
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
@@ -1330,8 +1330,8 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 	mbsFS_pseudo_vma_init(&pvma, info, index);
 	gfp = GFP_PRAM;
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
-	page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
-	//page = alloc_page_vma(gfp, &pvma, 0);
+	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_page_vma(gfp, &pvma, 0);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
 	return page;
@@ -1965,6 +1965,7 @@ unsigned long mbsFS_get_unmapped_area(struct file *file,
 static int mbsFS_set_policy(struct vm_area_struct *vma, struct mempolicy *mpol)
 {
 	struct inode *inode = file_inode(vma->vm_file);
+	return mpol_set_shared_policy(&SHMEM_I(inode)->policy, vma, mpol);
 	return mpol_set_mbsfs_policy(&MBS_I(inode)->policy, vma, mpol);
 }
 
@@ -1975,6 +1976,7 @@ static struct mempolicy *mbsFS_get_policy(struct vm_area_struct *vma,
 	pgoff_t index;
 
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
+	return mpol_shared_policy_lookup(&SHMEM_I(inode)->policy, index);
 	return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
 }
 
@@ -2046,8 +2048,10 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				inode->i_mapping->a_ops = &mbsFS_aops;
 				inode->i_op = &mbsFS_inode_operations;
 				inode->i_fop = &mbsFS_file_operations;
-				mpol_mbsfs_policy_init(&info->policy,
-						mbsFS_get_sbmpol(sbinfo));
+				mpol_shared_policy_init(&info->policy,
+						shmem_get_sbmpol(sbinfo));
+				//mpol_mbsfs_policy_init(&info->policy,
+				//		mbsFS_get_sbmpol(sbinfo));
 				break;
 			case S_IFDIR:
 				inc_nlink(inode);
@@ -2061,7 +2065,8 @@ static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode 
 				 * Must not load anything in the rbtree,
 				 * mpol_free_mbsfs_policy will not be called.
 				 */
-				mpol_mbsfs_policy_init(&info->policy, NULL);
+				mpol_shared_policy_init(&info->policy, NULL);
+				//mpol_mbsfs_policy_init(&info->policy, NULL);
 				break;
 		}
 	} else {
@@ -3362,7 +3367,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		.refcnt = ATOMIC_INIT(1), /* never free it */
 		.mode = MPOL_PREFERRED,
 		.flags = MPOL_F_LOCAL,
-	struct mempolicy *mpol = &default_pram_policy;
+		struct mempolicy *mpol = &default_pram_policy;
 	};
 #endif
 	struct mempolicy *mpol = NULL;
@@ -3445,10 +3450,11 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 				goto bad_val;
 #ifdef CONFIG_NUMA
 		} else if (!strcmp(this_char,"flag")) {
-			mpol_put_pram(mpol);
+			mpol_put(mpol);
+			//mpol_put_pram(mpol);
 			mpol = NULL;
-			//if (mpol_parse_str(value, &mpol))
-			if (mpol_parse_str_pram(value, &mpol))
+			//if (mpol_parse_str_pram(value, &mpol))
+			if (mpol_parse_str(value, &mpol))
 				goto bad_val;
 #endif
 		} else {
@@ -3463,7 +3469,8 @@ bad_val:
 	pr_err("mbsfs: Bad value '%s' for mount option '%s'\n",
 			value, this_char);
 error:
-	mpol_put_pram(mpol);
+	mpol_put(mpol);
+	//mpol_put_pram(mpol);
 	return 1;
 
 }
@@ -3505,7 +3512,8 @@ static int mbsFS_remount_fs(struct super_block *sb, int *flags, char *data)
 	 * Preserve previous prampolicy unless mpol remount option was specified.
 	 */
 	if (config.mpol) {
-		mpol_put_pram(sbinfo->mpol);
+		mpol_put(sbinfo->mpol);
+		//mpol_put_pram(sbinfo->mpol);
 		sbinfo->mpol = config.mpol;	/* transfers initial ref */
 	}
 out:
@@ -3638,15 +3646,16 @@ static void mbsFS_put_super(struct super_block *sb)
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
-	mpol_put_pram(sbinfo->mpol);
+	mpol_put(sbinfo->mpol);
+	//mpol_put_pram(sbinfo->mpol);
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
 
 int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 {
-	struct inode *inode;
 	struct mbsFS_sb_info *sbinfo;
+	struct inode *inode;
 	int err = -ENOMEM;
 
 	/* Round up to L1_CACHE_BYTES to resist false sharing */
@@ -3735,7 +3744,8 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
-		mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
+		mpol_free_shared_policy(&SHMEM_I(inode)->policy);
+		//mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
 
