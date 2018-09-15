@@ -2772,6 +2772,7 @@ continue_resched:
 		     F_SEAL_GROW | \
 		     F_SEAL_WRITE)
 
+#if 0
 int shmem_add_seals(struct file *file, unsigned int seals)
 {
 	struct inode *inode = file_inode(file);
@@ -2842,7 +2843,7 @@ unlock:
 	return error;
 }
 EXPORT_SYMBOL_GPL(shmem_add_seals);
-
+#endif
 int shmem_get_seals(struct file *file)
 {
 	if (file->f_op != &shmem_file_operations)
