@@ -3358,14 +3358,14 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 {
 	char *this_char, *value, *rest;
 #if 0
-	//struct mempolicy *mpol = NULL;
 	static struct mempolicy pram_policy = {
 		.refcnt = ATOMIC_INIT(1), /* never free it */
 		.mode = MPOL_PREFERRED,
 		.flags = MPOL_F_LOCAL,
+	struct mempolicy *mpol = &default_pram_policy;
 	};
 #endif
-	struct mempolicy *mpol = &default_pram_policy;
+	struct mempolicy *mpol = NULL;
 	uid_t uid;
 	gid_t gid;
 
