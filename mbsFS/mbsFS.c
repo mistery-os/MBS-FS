@@ -45,13 +45,6 @@ static struct vfsmount *shm_mnt;
 #include <linux/kernel.h>
 //#########################
 
-#ifdef CONFIG_TMPFS_XATTR
-#undef CONFIG_TMPFS_XATTR
-#endif
-#ifdef CONFIG_TMPFS_XATTR
-#undef CONFIG_TMPFS_XATTR
-#endif
-
 #ifdef CONFIG_SHMEM
 /*
  * This virtual memory filesystem is heavily based on the ramfs. It
@@ -98,6 +91,13 @@ static struct vfsmount *shm_mnt;
 #include <linux/memblock.h>
 #include "mbs_fs.h"
 #include "internal.h"
+
+#ifdef CONFIG_TMPFS_XATTR
+#undef CONFIG_TMPFS_XATTR
+#endif
+//#########################
+//#########################
+//#########################
 
 #define BLOCKS_PER_PAGE  (PAGE_SIZE/512)
 #define VM_ACCT(size)    (PAGE_ALIGN(size) >> PAGE_SHIFT)
