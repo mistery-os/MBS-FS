@@ -2152,7 +2152,7 @@ static struct mempolicy *shmem_get_policy(struct vm_area_struct *vma,
 	return mpol_shared_policy_lookup(&SHMEM_I(inode)->policy, index);
 }
 #endif
-
+#if 0
 int shmem_lock(struct file *file, int lock, struct user_struct *user)
 {
 	struct inode *inode = file_inode(file);
@@ -2177,6 +2177,7 @@ out_nomem:
 	spin_unlock_irq(&info->lock);
 	return retval;
 }
+#endif
 
 static int shmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
