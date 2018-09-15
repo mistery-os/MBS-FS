@@ -24,7 +24,7 @@
 #include <linux/fs.h>
 #include <linux/vfs.h>
 #include <linux/mount.h>
-//#include <linux/ramfs.h>
+#include <linux/ramfs.h>
 #include <linux/pagemap.h>
 #include <linux/file.h>
 #include <linux/mm.h>
