@@ -9,6 +9,15 @@
 #include <linux/percpu_counter.h>
 #include <linux/xattr.h>
 
+struct ramfs_mount_opts {
+	umode_t mode;
+};
+
+struct ramfs_fs_info {
+	struct ramfs_mount_opts mount_opts;
+};
+
+
 /* inode in-kernel data */
 
 struct mbsFS_inode_info {
