@@ -3818,8 +3818,8 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
 	 * but the internal instance is left unlimited.
 	 */
 	if (!(sb->s_flags & MS_KERNMOUNT)) {
-		sbinfo->max_blocks = mbsFS_default_max_blocks();
-		sbinfo->max_inodes = mbsFS_default_max_inodes();
+		sbinfo->max_blocks = shmem_default_max_blocks();
+		sbinfo->max_inodes = shmem_default_max_inodes();
 		if (shmem_parse_options(data, sbinfo, false)) {
 			err = -EINVAL;
 			goto failed;
