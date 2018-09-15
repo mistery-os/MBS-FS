@@ -114,6 +114,7 @@ extern int user_pram_lock(size_t size, struct user_struct *user);
 extern void user_pram_unlock(size_t size, struct user_struct *user);
 extern void lru_add_drain(void);
 extern void lru_add_drain_all(void);
+static struct mempolicy default_pram_policy;
 //extern struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
 //				struct user_struct **user, int creat_flags,
 //				int page_size_log);
@@ -859,7 +860,7 @@ void mbsFS_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 	mbsFS_undo_range(inode, lstart, lend, false);
 	inode->i_ctime = inode->i_mtime = current_time(inode);
 }
-EXPORT_SYMBOL_GPL(mbsFS_truncate_range);
+//EXPORT_SYMBOL_GPL(mbsFS_truncate_range);
 
 static int mbsFS_getattr(const struct path *path, struct kstat *stat,
 		u32 request_mask, unsigned int query_flags)
@@ -2235,7 +2236,7 @@ ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	}
 	return ret;
 }
-EXPORT_SYMBOL(mbsFS_file_write_iter);
+//EXPORT_SYMBOL(mbsFS_file_write_iter);
 
 	static int
 mbsFS_write_begin(struct file *file, struct address_space *mapping,
@@ -2678,7 +2679,7 @@ unlock:
 	inode_unlock(inode);
 	return error;
 }
-EXPORT_SYMBOL_GPL(mbsFS_add_seals);
+//EXPORT_SYMBOL_GPL(mbsFS_add_seals);
 
 int mbsFS_get_seals(struct file *file)
 {
@@ -2687,7 +2688,7 @@ int mbsFS_get_seals(struct file *file)
 
 	return MBS_I(file_inode(file))->seals;
 }
-EXPORT_SYMBOL_GPL(mbsFS_get_seals);
+//EXPORT_SYMBOL_GPL(mbsFS_get_seals);
 
 long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -3356,7 +3357,8 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
 	char *this_char, *value, *rest;
-	struct mempolicy *mpol = NULL;
+	//struct mempolicy *mpol = NULL;
+	struct mempolicy *mpol = &default_pram_policy;
 	uid_t uid;
 	gid_t gid;
 
@@ -3989,7 +3991,7 @@ struct file *mbsFS_file_setup(const char *name, loff_t size, unsigned long flags
 {
 	return __mbsFS_file_setup(name, size, flags, 0);
 }
-EXPORT_SYMBOL_GPL(mbsFS_file_setup);
+//EXPORT_SYMBOL_GPL(mbsFS_file_setup);
 #if 0
 /**
  * mbsFS_zero_setup - setup a MBS anonymous mapping
@@ -4049,7 +4051,7 @@ struct page *mbsFS_read_mapping_page_gfp(struct address_space *mapping,
 		unlock_page(page);
 	return page;
 }
-EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
+//EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
 
 /*###########################################################################*/
 /*###########################################################################*/
