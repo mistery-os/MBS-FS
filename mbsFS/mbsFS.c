@@ -45,6 +45,10 @@ static struct vfsmount *shm_mnt;
 #include <linux/kernel.h>
 //#########################
 
+#ifdef CONFIG_TMPFS_XATTR
+#undef CONFIG_TMPFS_XATTR
+#endif
+
 #ifdef CONFIG_SHMEM
 /*
  * This virtual memory filesystem is heavily based on the ramfs. It
