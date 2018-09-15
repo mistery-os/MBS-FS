@@ -48,6 +48,9 @@ static struct vfsmount *shm_mnt;
 #ifdef CONFIG_TMPFS_XATTR
 #undef CONFIG_TMPFS_XATTR
 #endif
+#ifdef CONFIG_TMPFS_XATTR
+#undef CONFIG_TMPFS_XATTR
+#endif
 
 #ifdef CONFIG_SHMEM
 /*
@@ -4011,12 +4014,13 @@ static const struct vm_operations_struct shmem_vm_ops = {
 	.get_policy     = shmem_get_policy,
 #endif
 };
-
+#if 0
 static struct dentry *shmem_mount(struct file_system_type *fs_type,
 	int flags, const char *dev_name, void *data)
 {
 	return mount_nodev(fs_type, flags, data, shmem_fill_super);
 }
+#endif
 static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
 		int flags, const char *dev_name, void *data)
 {
