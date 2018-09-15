@@ -22,10 +22,9 @@
  */
 
 #include <linux/fs.h>
-#include <linux/init.h>
 #include <linux/vfs.h>
 #include <linux/mount.h>
-#include <linux/ramfs.h>
+//#include <linux/ramfs.h>
 #include <linux/pagemap.h>
 #include <linux/file.h>
 #include <linux/mm.h>
@@ -39,6 +38,12 @@
 #include <asm/tlbflush.h> /* for arch/microblaze update_mmu_cache() */
 
 static struct vfsmount *shm_mnt;
+
+//#########################
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+//#########################
 
 #ifdef CONFIG_SHMEM
 /*
@@ -80,7 +85,11 @@ static struct vfsmount *shm_mnt;
 
 #include <linux/uaccess.h>
 #include <asm/pgtable.h>
-
+//#########################
+//#########################
+//#########################
+#include <linux/memblock.h>
+#include "mbs_fs.h"
 #include "internal.h"
 
 #define BLOCKS_PER_PAGE  (PAGE_SIZE/512)
@@ -91,6 +100,19 @@ static struct vfsmount *shm_mnt;
 
 /* Symlink up to this size is kmalloc'ed instead of using a swappable page */
 #define SHORT_SYMLINK_LEN 128
+extern struct memblock memblock;
+extern struct mempolicy * mpol_mbsfs_policy_lookup(struct mbsfs_policy *sp, unsigned long idx);
+extern int mpol_set_mbsfs_policy(struct mbsfs_policy *info,struct vm_area_struct *vma, struct mempolicy *npol);
+extern int user_pram_lock(size_t size, struct user_struct *user);
+extern void user_pram_unlock(size_t size, struct user_struct *user);
+extern void lru_add_drain(void);
+extern void lru_add_drain_all(void);
+//extern struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
+//				struct user_struct **user, int creat_flags,
+//				int page_size_log);
+
+#define MBSFS_MAGIC             0x20181231      //random number 
+
 
 /*
  * shmem_fallocate communicates with shmem_fault or shmem_writepage via
@@ -2978,7 +3000,7 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct shmem_sb_info *sbinfo = SHMEM_SB(dentry->d_sb);
 
-	buf->f_type = TMPFS_MAGIC;
+	buf->f_type = MBSFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;
 	buf->f_namelen = NAME_MAX;
 	if (sbinfo->max_blocks) {
@@ -3821,7 +3843,7 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_maxbytes = MAX_LFS_FILESIZE;
 	sb->s_blocksize = PAGE_SIZE;
 	sb->s_blocksize_bits = PAGE_SHIFT;
-	sb->s_magic = TMPFS_MAGIC;
+	sb->s_magic = MBSFS_MAGIC;
 	sb->s_op = &shmem_ops;
 	sb->s_time_gran = 1;
 #ifdef CONFIG_TMPFS_XATTR
