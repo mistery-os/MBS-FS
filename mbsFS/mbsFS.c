@@ -104,7 +104,24 @@ struct shmem_falloc {
 	pgoff_t nr_falloced;	/* how many new pages have been fallocated */
 	pgoff_t nr_unswapped;	/* how often writepage refused to swap out */
 };
+unsigned long totalpram_pages;
 
+static unsigned long shmem_default_max_blocks(void)
+{
+	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+	//totalpram_pages=totalram_pages;
+	return totalpram_pages; 
+	return totalpram_pages / 2;
+}
+
+static unsigned long shmem_default_max_inodes(void)
+{
+	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
+//	totalpram_pages=totalram_pages;
+	return min(totalpram_pages - totalhigh_pages, totalpram_pages);
+}
+
+#if 0
 #ifdef CONFIG_TMPFS
 static unsigned long shmem_default_max_blocks(void)
 {
@@ -116,7 +133,7 @@ static unsigned long shmem_default_max_inodes(void)
 	return min(totalram_pages - totalhigh_pages, totalram_pages / 2);
 }
 #endif
-
+#endif
 static bool shmem_should_replace_page(struct page *page, gfp_t gfp);
 static int shmem_replace_page(struct page **pagep, gfp_t gfp,
 				struct shmem_inode_info *info, pgoff_t index);
@@ -228,7 +245,7 @@ static const struct inode_operations shmem_inode_operations;
 static const struct inode_operations shmem_dir_inode_operations;
 static const struct inode_operations shmem_special_inode_operations;
 static const struct vm_operations_struct shmem_vm_ops;
-static struct file_system_type shmem_fs_type;
+static struct file_system_type mbsFS_fs_type;
 
 bool vma_is_shmem(struct vm_area_struct *vma)
 {
@@ -3779,8 +3796,8 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
 	 * but the internal instance is left unlimited.
 	 */
 	if (!(sb->s_flags & MS_KERNMOUNT)) {
-		sbinfo->max_blocks = shmem_default_max_blocks();
-		sbinfo->max_inodes = shmem_default_max_inodes();
+		sbinfo->max_blocks = mbsFS_default_max_blocks();
+		sbinfo->max_inodes = mbsFS_default_max_inodes();
 		if (shmem_parse_options(data, sbinfo, false)) {
 			err = -EINVAL;
 			goto failed;
@@ -3974,15 +3991,41 @@ static struct dentry *shmem_mount(struct file_system_type *fs_type,
 {
 	return mount_nodev(fs_type, flags, data, shmem_fill_super);
 }
+static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
+		int flags, const char *dev_name, void *data)
+{
+	struct dentry *const entry = mount_nodev(fs_type, flags, data, shmem_fill_super);
+	if (IS_ERR(entry))
+		pr_err("mbsFS mount failed\n");
+	else
+		pr_debug("mbsFS mounted successfully.\n");
 
-static struct file_system_type shmem_fs_type = {
+	return entry;
+}
+
+static void mbsfs_kill_sb(struct super_block *sb)
+{
+	/*
+	   dev_t dev = sb->s_dev;
+	   generic_shutdown_super(sb);
+	   free_anon_bdev(dev);
+	   */
+	if (sb->s_root)
+		d_genocide(sb->s_root);
+	kill_anon_super(sb);
+	pr_debug("mbsFS_kill_sb successfully finished\n");
+}
+
+static struct file_system_type mbsFS_fs_type = {
 	.owner		= THIS_MODULE,
-	.name		= "tmpfs",
-	.mount		= shmem_mount,
-	.kill_sb	= kill_litter_super,
+	.name		= "mbsfs",
+	.mount		= mbsFS_mount,
+	.kill_sb	= mbsfs_kill_sb,
+	//.mount		= shmem_mount,
+	//.kill_sb	= kill_litter_super,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
-
+#if 0
 int __init shmem_init(void)
 {
 	int error;
@@ -3995,13 +4038,13 @@ int __init shmem_init(void)
 	if (error)
 		goto out3;
 
-	error = register_filesystem(&shmem_fs_type);
+	error = register_filesystem(&mbsFS_fs_type);
 	if (error) {
 		pr_err("Could not register tmpfs\n");
 		goto out2;
 	}
 
-	shm_mnt = kern_mount(&shmem_fs_type);
+	shm_mnt = kern_mount(&mbsFS_fs_type);
 	if (IS_ERR(shm_mnt)) {
 		error = PTR_ERR(shm_mnt);
 		pr_err("Could not kern_mount tmpfs\n");
@@ -4017,14 +4060,14 @@ int __init shmem_init(void)
 	return 0;
 
 out1:
-	unregister_filesystem(&shmem_fs_type);
+	unregister_filesystem(&mbsFS_fs_type);
 out2:
 	shmem_destroy_inodecache();
 out3:
 	shm_mnt = ERR_PTR(error);
 	return error;
 }
-
+#endif
 #if defined(CONFIG_TRANSPARENT_HUGE_PAGECACHE) && defined(CONFIG_SYSFS)
 static ssize_t shmem_enabled_show(struct kobject *kobj,
 		struct kobj_attribute *attr, char *buf)
@@ -4113,6 +4156,7 @@ bool shmem_huge_enabled(struct vm_area_struct *vma)
 #endif /* CONFIG_TRANSPARENT_HUGE_PAGECACHE */
 
 #else /* !CONFIG_SHMEM */
+#if 0
 /*
  * tiny-shmem: simple shmemfs and tmpfs using ramfs code
  *
@@ -4122,23 +4166,23 @@ bool shmem_huge_enabled(struct vm_area_struct *vma)
  * effectively equivalent, but much lighter weight.
  */
 
-static struct file_system_type shmem_fs_type = {
+static struct file_system_type mbsFS_fs_type = {
 	.name		= "tmpfs",
 	.mount		= ramfs_mount,
 	.kill_sb	= kill_litter_super,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
-
+#if 0
 int __init shmem_init(void)
 {
-	BUG_ON(register_filesystem(&shmem_fs_type) != 0);
+	BUG_ON(register_filesystem(&mbsFS_fs_type) != 0);
 
-	shm_mnt = kern_mount(&shmem_fs_type);
+	shm_mnt = kern_mount(&mbsFS_fs_type);
 	BUG_ON(IS_ERR(shm_mnt));
 
 	return 0;
 }
-
+#endif
 int shmem_unuse(swp_entry_t swap, struct page *page)
 {
 	return 0;
@@ -4173,7 +4217,47 @@ EXPORT_SYMBOL_GPL(shmem_truncate_range);
 #define shmem_get_inode(sb, dir, mode, dev, flags)	ramfs_get_inode(sb, dir, mode, dev)
 #define shmem_acct_size(flags, size)		0
 #define shmem_unacct_size(flags, size)		do {} while (0)
+#endif
 #endif /* CONFIG_SHMEM */
+
+static int __init mbsFS_init(void)
+{
+	int error;
+
+	/* don't re-init */
+	if (shmem_inode_cachep)
+		return 0;
+	error = shmem_init_inodecache();
+	if (error)
+		goto out2;
+	error = register_filesystem(&mbsFS_fs_type);
+	if (error) {
+		pr_err("Could not register mbsfs\n");
+		goto out1;
+	}
+	pr_debug("mbsFS_init suceessed.\n");
+	return 0;
+out1:
+	shmem_destroy_inodecache();
+out2:
+	shm_mnt = ERR_PTR(error);
+	return error;
+}
+static void __exit mbsFS_exit(void)
+{
+	unregister_filesystem(&mbsFS_fs_type);
+	shmem_destroy_inodecache();
+	pr_debug("mbsFS_exit successed.\n");
+}
+
+module_init(mbsFS_init);
+module_exit(mbsFS_exit);
+
+MODULE_AUTHOR("Yongseob");
+MODULE_DESCRIPTION("mbsFS: memory bus-connected storage File System");
+MODULE_LICENSE("GPL");
+
+
 
 /* common code */
 
