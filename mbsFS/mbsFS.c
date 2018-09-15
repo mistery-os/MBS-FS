@@ -3358,7 +3358,12 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 {
 	char *this_char, *value, *rest;
 	//struct mempolicy *mpol = NULL;
-	struct mempolicy *mpol = &default_pram_policy;
+	static struct mempolicy pram_policy = {
+		.refcnt = ATOMIC_INIT(1), /* never free it */
+		.mode = MPOL_PREFERRED,
+		.flags = MPOL_F_LOCAL,
+	};
+	struct mempolicy *mpol = &pram_policy;
 	uid_t uid;
 	gid_t gid;
 
@@ -3752,7 +3757,7 @@ static void mbsFS_destroy_inodecache(void)
 }
 
 static const struct address_space_operations mbsFS_aops = {
-//	.writepage	= mbsFS_writepage,
+	//	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsFS_write_begin,
 	.write_end	= mbsFS_write_end,
