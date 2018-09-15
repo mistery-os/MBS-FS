@@ -95,6 +95,9 @@ static struct vfsmount *shm_mnt;
 #ifdef CONFIG_TMPFS_XATTR
 #undef CONFIG_TMPFS_XATTR
 #endif
+#ifdef CONFIG_TMPFS_POSIX_ACL
+#undef CONFIG_TMPFS_POSIX_ACL
+#endif
 //#########################
 //#########################
 //#########################
