@@ -441,13 +441,13 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_FORCE	(-2)
 
 #define mbsFS_huge MBS_HUGE_DENY
-
+#if 0
 static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
 }
-
+#endif
 /*
  * Like add_to_page_cache_locked, but error if expected item has gone.
  */
@@ -1122,6 +1122,7 @@ out:
 /*
  * Move the page from the page cache to the swap cache.
  */
+#if 0
 static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 {
 	struct mbsFS_inode_info *info;
@@ -1227,7 +1228,7 @@ redirty:
 	unlock_page(page);
 	return 0;
 }
-
+#endif
 
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
@@ -1270,6 +1271,7 @@ static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 	/* Drop reference taken by mpol_mbsfs_policy_lookup() */
 	mpol_cond_put_pram(vma->vm_policy);
 }
+#if 0
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1282,7 +1284,6 @@ static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 
 	return page;
 }
-#if 0
 static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1317,15 +1318,16 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 }
 #endif
 static struct page *mbsFS_alloc_page(gfp_t gfp,
-		struct mbsFS_inode_info *info, pgoff_t index)
+		struct mbsFS_inode_info *info, pgoff_t index, int nd)
 {
 	struct vm_area_struct pvma;
 	struct page *page;
 
 	mbsFS_pseudo_vma_init(&pvma, info, index);
-	gfp |= GFP_PRAM;
+	gfp = GFP_PRAM;
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
-	page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsFS_pseudo_vma_destroy(&pvma);
 
@@ -1333,7 +1335,7 @@ static struct page *mbsFS_alloc_page(gfp_t gfp,
 }
 static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 		struct inode *inode,
-		pgoff_t index, bool huge)
+		pgoff_t index, bool huge, int nd)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
 	struct page *page;
@@ -1350,7 +1352,7 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 	//if (huge)
 	//	page = mbsFS_alloc_hugepage(gfp, info, index);
 	//else
-	page = mbsFS_alloc_page(gfp, info, index);
+	page = mbsFS_alloc_page(gfp, info, index, nd);
 	if (page) {
 		__SetPageLocked(page);
 		__SetPageSwapBacked(page);
@@ -1395,7 +1397,7 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 	 * limit chance of success by further cpuset and node constraints.
 	 */
 	gfp &= ~GFP_CONSTRAINT_MASK;
-	newpage = mbsFS_alloc_page(gfp, info, index);
+	newpage = mbsFS_alloc_page(gfp, info, index, numa_node_id());
 	if (!newpage)
 		return -ENOMEM;
 
@@ -1627,7 +1629,7 @@ alloc_huge:
 		//page = mbsFS_alloc_and_acct_page(gfp, inode, index, true);
 		if (IS_ERR(page)) {
 alloc_nohuge:		page = mbsFS_alloc_and_acct_page(gfp, inode,
-					index, false);
+					index, false, numa_node_id());
 		}
 #if 0
 		if (IS_ERR(page)) {
@@ -2098,7 +2100,7 @@ static int mbsFS_mfill_atomic_pte(struct mm_struct *dst_mm,
 		goto out;
 
 	if (!*pagep) {
-		page = mbsFS_alloc_page(gfp, info, pgoff);
+		page = mbsFS_alloc_page(gfp, info, pgoff, numa_node_id());
 		if (!page)
 			goto out_unacct_blocks;
 
