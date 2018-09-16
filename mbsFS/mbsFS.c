@@ -1347,9 +1347,9 @@ static struct page *mbsFS_alloc_and_acct_page(gfp_t gfp,
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
-	//	if (huge)
-	//		page = mbsFS_alloc_hugepage(gfp, info, index);
-	//	else
+	//if (huge)
+	//	page = mbsFS_alloc_hugepage(gfp, info, index);
+	//else
 	page = mbsFS_alloc_page(gfp, info, index);
 	if (page) {
 		__SetPageLocked(page);
