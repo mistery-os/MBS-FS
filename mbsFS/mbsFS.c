@@ -309,7 +309,7 @@ static const struct super_operations mbsfs_ops;
 static const struct address_space_operations mbsfs_aops;
 static const struct file_operations mbsfs_file_operations;
 static const struct inode_operations mbsfs_inode_operations;
-static const struct inode_operations mbsFS_dir_inode_operations;
+static const struct inode_operations mbsfs_dir_inode_operations;
 //static const struct inode_operations mbsFS_special_inode_operations;
 //static const struct vm_operations_struct mbsFS_vm_ops;
 //static struct file_system_type mbsFS_fs_type;
@@ -2091,7 +2091,7 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 				//inc_nlink(inode);
 				/* Some things misbehave if size == 0 on a directory */
 				//inode->i_size = 2 * BOGO_DIRENT_SIZE;
-				inode->i_op = &mbsFS_dir_inode_operations;
+				inode->i_op = &mbsfs_dir_inode_operations;
 				inode->i_fop = &simple_dir_operations;
 				break;
 			case S_IFLNK:
@@ -4095,7 +4095,7 @@ static const struct file_operations mbsfs_file_operations = {
 	//.fallocate	= mbsFS_fallocate,
 };
 
-static const struct inode_operations mbsFS_inode_operations = {
+static const struct inode_operations mbsfs_inode_operations = {
 	.getattr	= simple_getattr,
 	.setattr	= simple_setattr,
 	//.getattr	= mbsFS_getattr,
@@ -4106,7 +4106,7 @@ static const struct inode_operations mbsFS_inode_operations = {
 #endif
 };
 
-static const struct inode_operations mbsFS_dir_inode_operations = {
+static const struct inode_operations mbsfs_dir_inode_operations = {
 	.create		= mbsfs_create,
 	.lookup		= simple_lookup,
 	.link		= mbsfs_link,
