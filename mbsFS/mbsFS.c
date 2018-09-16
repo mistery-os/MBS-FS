@@ -1814,7 +1814,7 @@ unlock:
 		goto repeat;
 	return error;
 }
-#endif
+
 
 /*
  * This is like autoremove_wake_function, but it removes the wait queue
@@ -1909,7 +1909,7 @@ static int mbsFS_fault(struct vm_fault *vmf)
 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
 	return ret;
 }
-#if 0
+
 unsigned long mbsFS_get_unmapped_area(struct file *file,
 		unsigned long uaddr, unsigned long len,
 		unsigned long pgoff, unsigned long flags)
@@ -2105,7 +2105,7 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 	return inode;
 }
 
-
+#if 0
 bool mbsFS_mapping(struct address_space *mapping)
 {
 	return mapping->a_ops == &mbsFS_aops;
@@ -2251,7 +2251,7 @@ static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
 #else
 #define mbsFS_initxattrs NULL
 #endif
-
+#endif
 ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct file *file = iocb->ki_filp;
@@ -3091,11 +3091,12 @@ out:
 #endif
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
-	struct mbsFS_sb_info *sbinfo = MBS_SB(dentry->d_sb);
+	//struct mbsFS_sb_info *sbinfo = MBS_SB(dentry->d_sb);
 
 	buf->f_type = dentry->d_sb->s_magic;//MBSFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;
 	buf->f_namelen = NAME_MAX;
+#if 0
 	if (sbinfo->max_blocks) {
 		buf->f_blocks = sbinfo->max_blocks;
 		buf->f_bavail =
@@ -3107,6 +3108,7 @@ static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 		buf->f_ffree = sbinfo->free_inodes;
 	}
 	/* else leave those fields 0 like simple_statfs */
+#endif
 	return 0;
 }
 
@@ -3370,7 +3372,7 @@ static int mbsfs_symlink(struct inode *dir, struct dentry *dentry, const char *s
 
 	return error;
 }
-
+#if 0
 static void mbsFS_put_link(void *arg)
 {
 	mark_page_accessed(arg);
@@ -3412,7 +3414,7 @@ static const char *mbsFS_get_link(struct dentry *dentry,
 /*
  * Callback for security_inode_init_security() for acquiring xattrs.
  */
-#if 0
+
 static int mbsFS_initxattrs(struct inode *inode,
 		const struct xattr *xattr_array,
 		void *fs_info)
