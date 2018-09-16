@@ -174,6 +174,7 @@ static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
  * inode->i_private (with i_mutex making sure that it has only one user at
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
+#if 0
 struct mbsFS_falloc {
 	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
 	pgoff_t start;		/* start of range currently being fallocated */
@@ -302,9 +303,9 @@ static inline void mbsFS_inode_unacct_blocks(struct inode *inode, long pages)
 		percpu_counter_sub(&sbinfo->used_blocks, pages);
 	mbsFS_unacct_blocks(info->flags, pages);
 }
-
+#endif
 static const struct super_operations mbsfs_ops;
-static const struct address_space_operations mbsFS_aops;
+static const struct address_space_operations mbsfs_aops;
 static const struct file_operations mbsfs_file_operations;
 static const struct inode_operations mbsfs_inode_operations;
 static const struct inode_operations mbsFS_dir_inode_operations;
@@ -1023,6 +1024,7 @@ static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 /*
  * If swap found in inode, free it and move page from swapcache to filecache.
  */
+#if 0
 static int mbsFS_unuse_inode(struct mbsFS_inode_info *info,
 		swp_entry_t swap, struct page **pagep)
 {
@@ -1153,7 +1155,7 @@ out:
 	put_page(page);
 	return error;
 }
-
+#endif
 /*
  * Move the page from the page cache to the swap cache.
  */
@@ -2920,7 +2922,7 @@ unlock:
 	inode_unlock(inode);
 	return error;
 }
-#endif
+
 //EXPORT_SYMBOL_GPL(mbsFS_add_seals);
 
 int mbsFS_get_seals(struct file *file)
@@ -2954,7 +2956,7 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-#if 0
+
 static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
@@ -4059,7 +4061,7 @@ static void mbsFS_destroy_inodecache(void)
 	kmem_cache_destroy(mbsFS_inode_cachep);
 }
 
-static const struct address_space_operations mbsFS_aops = {
+static const struct address_space_operations mbsfs_aops = {
 	//	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
@@ -4283,7 +4285,7 @@ put_path:
 	path_put(&path);
 	return res;
 }
-#endif
+
 /**
  * mbsFS_kernel_file_setup - get an unlinked file living in mbsfs which must be
  * 	kernel internal.  There will be NO LSM permission checks against the
@@ -4310,7 +4312,7 @@ struct file *mbsFS_file_setup(const char *name, loff_t size, unsigned long flags
 	return __mbsFS_file_setup(name, size, flags, 0);
 }
 //EXPORT_SYMBOL_GPL(mbsFS_file_setup);
-#if 0
+
 /**
  * mbsFS_zero_setup - setup a MBS anonymous mapping
  * @vma: the vma to be mmapped is prepared by do_mmap_pgoff
