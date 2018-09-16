@@ -3355,7 +3355,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
 	char *this_char, *value, *rest;
-0
+
 	static struct mempolicy pram_policy = {
 		.refcnt = ATOMIC_INIT(1), /* never free it */
 		.mode = MPOL_PREFERRED,
