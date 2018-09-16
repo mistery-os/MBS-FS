@@ -1353,7 +1353,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	//prep_transhuge_page(page);
 	return page;
 }
-#endif
+
 static struct page *mbsFS_alloc_page(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index, int nd)
 {
@@ -1492,7 +1492,7 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
  * fault_mm and fault_type are only supplied by mbsFS_fault:
  * otherwise they are NULL.
  */
-#if 0
+
 static int mbsFS_getpage_gfp(struct inode *inode, pgoff_t index,
 		struct page **pagep, enum mbs_type mbstype, gfp_t gfp,
 		struct vm_area_struct *vma, struct vm_fault *vmf, int *fault_type)
