@@ -996,7 +996,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 	mbsFS_free_inode(inode->i_sb);
 	clear_inode(inode);
 }
-#endif
+
 static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
 	struct radix_tree_iter iter;
@@ -1019,12 +1019,11 @@ static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 
 	rcu_read_unlock();
 	return found;
-}
-
+} 
 /*
  * If swap found in inode, free it and move page from swapcache to filecache.
  */
-#if 0
+
 static int mbsFS_unuse_inode(struct mbsFS_inode_info *info,
 		swp_entry_t swap, struct page **pagep)
 {
@@ -2646,7 +2645,7 @@ out:
 	return retval ? retval : error;
 #endif
 }
-
+#if 0
 /*
  * llseek SEEK_DATA or SEEK_HOLE through the radix_tree.
  */
@@ -2852,7 +2851,7 @@ continue_resched:
 		F_SEAL_SHRINK | \
 		F_SEAL_GROW | \
 		F_SEAL_WRITE)
-#if 0
+
 int mbsFS_add_seals(struct file *file, unsigned int seals)
 {
 	struct inode *inode = file_inode(file);
@@ -3352,7 +3351,7 @@ static int mbsfs_symlink(struct inode *dir, struct dentry *dentry, const char *s
 	int error = -ENOSPC;
 	int len;
 	struct inode *inode;
-	struct page *page;
+	//struct page *page;
 
 	len = strlen(symname) + 1;
 	if (len > PAGE_SIZE)
@@ -3906,7 +3905,7 @@ err_name:
 	kfree(name);
 	return error;
 }
-
+#endif
 
 static void mbsFS_put_super(struct super_block *sb)
 {
@@ -3918,7 +3917,7 @@ static void mbsFS_put_super(struct super_block *sb)
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
-#endif
+
 int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	struct mbsfs_fs_info *fsi;
