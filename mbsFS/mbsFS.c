@@ -3355,7 +3355,7 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
 	char *this_char, *value, *rest;
-
+#if 0
 	static struct mempolicy pram_policy = {
 		.refcnt = ATOMIC_INIT(1), /* never free it */
 		.mode = MPOL_PREFERRED,
@@ -3363,8 +3363,8 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 	};
 	//struct mempolicy *mpol = &default_pram_policy;
 	struct mempolicy *mpol = &pram_policy;
-
-	//struct mempolicy *mpol = NULL;
+#endif
+	struct mempolicy *mpol = NULL;
 	uid_t uid;
 	gid_t gid;
 
@@ -3444,11 +3444,11 @@ static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 				goto bad_val;
 #ifdef CONFIG_NUMA
 		} else if (!strcmp(this_char,"flag")) {
-			mpol_put(mpol);
-			//mpol_put_pram(mpol);
+			//mpol_put(mpol);
+			mpol_put_pram(mpol);
 			mpol = NULL;
-			//if (mpol_parse_str_pram(value, &mpol))
-			if (mpol_parse_str(value, &mpol))
+			//if (mpol_parse_str(value, &mpol))
+			if (mpol_parse_str_pram(value, &mpol))
 				goto bad_val;
 #endif
 		} else {
