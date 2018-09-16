@@ -1624,11 +1624,12 @@ repeat:
 		}
 
 alloc_huge:
-		page = mbsFS_alloc_and_acct_page(gfp, inode, index, true);
+		//page = mbsFS_alloc_and_acct_page(gfp, inode, index, true);
 		if (IS_ERR(page)) {
 alloc_nohuge:		page = mbsFS_alloc_and_acct_page(gfp, inode,
 					index, false);
 		}
+#if 0
 		if (IS_ERR(page)) {
 			int retry = 5;
 			error = PTR_ERR(page);
@@ -1649,10 +1650,10 @@ alloc_nohuge:		page = mbsFS_alloc_and_acct_page(gfp, inode,
 			}
 			goto failed;
 		}
-
 		if (PageTransHuge(page))
 			hindex = round_down(index, HPAGE_PMD_NR);
 		else
+#endif
 			hindex = index;
 
 		if (mbstype == MBS_WRITE)
