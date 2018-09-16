@@ -483,7 +483,7 @@ static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 {
 	return 0;
 }
-#endif
+
 /*
  * Like add_to_page_cache_locked, but error if expected item has gone.
  */
@@ -966,7 +966,7 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
-#if 0
+
 static void mbsFS_evict_inode(struct inode *inode)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
