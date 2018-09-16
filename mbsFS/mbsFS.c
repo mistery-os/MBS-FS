@@ -1,4 +1,5 @@
 /*
+ * simple FS
  * Memory Bus-connected Storage File System
  * Copyright (C) 2018 Yongseob Lee
  *
@@ -24,11 +25,25 @@
  * This file is released under the GPL.
  */
 
+//#########################
+#include <linux/init.h>
+#include <linux/module.h>
+#include <linux/kernel.h>
+//#########################
 #include <linux/fs.h>
+#include <linux/pagemap.h>
+#include <linux/highmem.h>
+#include <linux/time.h>
+#include <linux/string.h>
+#include <linux/backing-dev.h>
+#include <linux/ramfs.h>
+#include <linux/sched.h>
+#include <linux/parser.h>
+#include <linux/magic.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 #include <linux/vfs.h>
 #include <linux/mount.h>
-#include <linux/ramfs.h>
-#include <linux/pagemap.h>
 #include <linux/file.h>
 #include <linux/mm.h>
 #include <linux/sched/signal.h>
@@ -42,19 +57,11 @@
 
 static struct vfsmount *mbsFS_mnt;
 
-//#########################
-#include <linux/init.h>
-#include <linux/module.h>
-#include <linux/kernel.h>
-//#########################
 #include <linux/xattr.h>
 #include <linux/exportfs.h>
 #include <linux/posix_acl.h>
 #include <linux/posix_acl_xattr.h>
 #include <linux/mman.h>
-#include <linux/string.h>
-#include <linux/slab.h>
-#include <linux/backing-dev.h>
 #include <linux/writeback.h>
 #include <linux/blkdev.h>
 #include <linux/pagevec.h>
@@ -67,9 +74,7 @@ static struct vfsmount *mbsFS_mnt;
 #include <linux/namei.h>
 #include <linux/ctype.h>
 #include <linux/migrate.h>
-#include <linux/highmem.h>
 #include <linux/seq_file.h>
-#include <linux/magic.h>
 #include <linux/syscalls.h>
 #include <linux/fcntl.h>
 #include <uapi/linux/memfd.h>
@@ -77,7 +82,6 @@ static struct vfsmount *mbsFS_mnt;
 #include <linux/rmap.h>
 #include <linux/uuid.h>
 
-#include <linux/uaccess.h>
 #include <asm/pgtable.h>
 //#########################
 //#########################
@@ -126,6 +130,22 @@ extern struct mempolicy default_pram_policy;
 //####################
 //####################
 //####################
+struct mbsfs_mount_opts {
+	umode_t mode;
+};
+
+struct mbsfs_fs_info {
+	struct mbsfs_mount_opts mount_opts;
+};
+
+#define RAMFS_DEFAULT_MODE	0755
+
+static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
+		unsigned long addr, unsigned long len, unsigned long pgoff,
+		unsigned long flags)
+{
+	return current->mm->get_unmapped_area(file, addr, len, pgoff, flags);
+}
 
 //static inline struct file *
 //hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
@@ -270,14 +290,14 @@ static inline void mbsFS_inode_unacct_blocks(struct inode *inode, long pages)
 	mbsFS_unacct_blocks(info->flags, pages);
 }
 
-static const struct super_operations mbsFS_ops;
+static const struct super_operations mbsfs_ops;
 static const struct address_space_operations mbsFS_aops;
-static const struct file_operations mbsFS_file_operations;
-static const struct inode_operations mbsFS_inode_operations;
+static const struct file_operations mbsfs_file_operations;
+static const struct inode_operations mbsfs_inode_operations;
 static const struct inode_operations mbsFS_dir_inode_operations;
-static const struct inode_operations mbsFS_special_inode_operations;
-static const struct vm_operations_struct mbsFS_vm_ops;
-static struct file_system_type mbsFS_fs_type;
+//static const struct inode_operations mbsFS_special_inode_operations;
+//static const struct vm_operations_struct mbsFS_vm_ops;
+//static struct file_system_type mbsFS_fs_type;
 
 bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
@@ -286,7 +306,7 @@ bool vma_is_mbsFS(struct vm_area_struct *vma)
 
 static LIST_HEAD(mbsFS_swaplist);
 static DEFINE_MUTEX(mbsFS_swaplist_mutex);
-
+#if 0
 static int mbsFS_reserve_inode(struct super_block *sb)
 {
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
@@ -301,7 +321,6 @@ static int mbsFS_reserve_inode(struct super_block *sb)
 	}
 	return 0;
 }
-
 static void mbsFS_free_inode(struct super_block *sb)
 {
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
@@ -311,6 +330,7 @@ static void mbsFS_free_inode(struct super_block *sb)
 		spin_unlock(&sbinfo->stat_lock);
 	}
 }
+#endif
 
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
@@ -930,7 +950,7 @@ static int mbsFS_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
-
+#if 0
 static void mbsFS_evict_inode(struct inode *inode)
 {
 	struct mbsFS_inode_info *info = MBS_I(inode);
@@ -960,7 +980,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 	mbsFS_free_inode(inode->i_sb);
 	clear_inode(inode);
 }
-
+#endif
 static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
 	struct radix_tree_iter iter;
@@ -2008,63 +2028,60 @@ static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 }
 #endif
 
-static struct inode *mbsFS_get_inode(struct super_block *sb, const struct inode *dir,
+static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode *dir,
 		umode_t mode, dev_t dev, unsigned long flags)
 {
 	struct inode *inode;
-	struct mbsFS_inode_info *info;
-	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
+	//struct mbsFS_inode_info *info;
+	//struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 
-	if (mbsFS_reserve_inode(sb))
-		return NULL;
+	//if (mbsFS_reserve_inode(sb))
+	//	return NULL;
 
 	inode = new_inode(sb);
 	if (inode) {
 		inode->i_ino = get_next_ino();
 		inode_init_owner(inode, dir, mode);
 		inode->i_blocks = 0;
-		inode->i_atime = inode->i_mtime = inode->i_ctime = current_time(inode);
 		inode->i_generation = get_seconds();
-		info = MBS_I(inode);
-		memset(info, 0, (char *)inode - (char *)info);
-		spin_lock_init(&info->lock);
-		info->seals = F_SEAL_SEAL;
-		info->flags = flags & VM_NORESERVE;
-		INIT_LIST_HEAD(&info->shrinklist);
-		INIT_LIST_HEAD(&info->swaplist);
-		simple_xattrs_init(&info->xattrs);
-		cache_no_acl(inode);
+		inode->i_mapping->a_ops = &mbsfs_aops;
+		//inode->i_mapping->a_ops = &mbsFS_aops;
+		mapping_set_gfp_mask(inode->i_mapping, GFP_PRAM);
+		mapping_set_unevictable(inode->i_mapping);
+		inode->i_atime = inode->i_mtime = inode->i_ctime = current_time(inode);
+		//info = MBS_I(inode);
+		//memset(info, 0, (char *)inode - (char *)info);
+		//spin_lock_init(&info->lock);
+		//info->seals = F_SEAL_SEAL;
+		//info->flags = flags & VM_NORESERVE;
+		//INIT_LIST_HEAD(&info->shrinklist);
+		//INIT_LIST_HEAD(&info->swaplist);
+		//simple_xattrs_init(&info->xattrs);
+		//cache_no_acl(inode);
 
 		switch (mode & S_IFMT) {
 			default:
-				inode->i_op = &mbsFS_special_inode_operations;
+				//inode->i_op = &mbsFS_special_inode_operations;
 				init_special_inode(inode, mode, dev);
 				break;
 			case S_IFREG:
-				inode->i_mapping->a_ops = &mbsFS_aops;
-				inode->i_op = &mbsFS_inode_operations;
-				inode->i_fop = &mbsFS_file_operations;
-				mpol_mbsfs_policy_init(&info->policy,
-						mbsFS_get_sbmpol(sbinfo));
+				inode->i_op = &mbsfs_inode_operations;
+				inode->i_fop = &mbsfs_file_operations;
 				break;
 			case S_IFDIR:
-				inc_nlink(inode);
+				//inc_nlink(inode);
 				/* Some things misbehave if size == 0 on a directory */
-				inode->i_size = 2 * BOGO_DIRENT_SIZE;
+				//inode->i_size = 2 * BOGO_DIRENT_SIZE;
 				inode->i_op = &mbsFS_dir_inode_operations;
 				inode->i_fop = &simple_dir_operations;
 				break;
 			case S_IFLNK:
-				/*
-				 * Must not load anything in the rbtree,
-				 * mpol_free_mbsfs_policy will not be called.
-				 */
-				mpol_mbsfs_policy_init(&info->policy, NULL);
+				inode->i_op = &page_symlink_inode_operations;
+				inode_nohighmem(inode);
 				break;
 		}
 	} else {
 		pr_err("inode allocation failed\n");
-		mbsFS_free_inode(sb);
 	}
 	return inode;
 }
@@ -2216,7 +2233,7 @@ static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
 #define mbsFS_initxattrs NULL
 #endif
 
-ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
+ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file->f_mapping->host;
@@ -2227,24 +2244,158 @@ ssize_t mbsFS_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	if (ret > 0)
 		ret = __generic_file_write_iter(iocb, from);
 	inode_unlock(inode);
-
+#if 0
 	if( !(file->f_mapping->flags & GFP_PRAM) ){
 		if (ret > 0)
 			ret = generic_write_sync(iocb, ret);
 	}
+#endif
 	return ret;
 }
 //EXPORT_SYMBOL(mbsFS_file_write_iter);
+int mbsfs_readpage(struct file *file, struct page *page)
+{
+	clear_highpage(page);
+	flush_dcache_page(page);
+	SetPageUptodate(page);
+	unlock_page(page);
+	return 0;
+}
+static inline struct page *
+mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
+{
+	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
+	VM_WARN_ON(!node_online(nid));
 
-	static int
-mbsFS_write_begin(struct file *file, struct address_space *mapping,
+	return __alloc_pages(gfp_mask, order, nid);
+}
+struct page *mbsfs__page_cache_alloc(gfp_t gfp)
+{
+	int n;
+	struct page *page;
+
+	if (cpuset_do_page_mem_spread()) {
+		unsigned int cpuset_mems_cookie;
+		do {
+			cpuset_mems_cookie = read_mems_allowed_begin();
+			n = cpuset_mem_spread_node();
+			page = mbsfs__alloc_pages_node(n, gfp, 0);
+		} while (!page && read_mems_allowed_retry(cpuset_mems_cookie));
+
+		return page;
+	}
+	return alloc_prams(gfp, 0);
+}
+struct page *mbsfs_pagecache_get_page(struct address_space *mapping, pgoff_t offset,
+	int fgp_flags, gfp_t gfp_mask)
+{
+	struct page *page;
+
+repeat:
+	page = find_get_entry(mapping, offset);
+	if (radix_tree_exceptional_entry(page))
+		page = NULL;
+	if (!page)
+		goto no_page;
+
+	if (fgp_flags & FGP_LOCK) {
+		if (fgp_flags & FGP_NOWAIT) {
+			if (!trylock_page(page)) {
+				put_page(page);
+				return NULL;
+			}
+		} else {
+			lock_page(page);
+		}
+
+		/* Has the page been truncated? */
+		if (unlikely(page->mapping != mapping)) {
+			unlock_page(page);
+			put_page(page);
+			goto repeat;
+		}
+		VM_BUG_ON_PAGE(page->index != offset, page);
+	}
+
+	if (page && (fgp_flags & FGP_ACCESSED))
+		mark_page_accessed(page);
+
+no_page:
+	if (!page && (fgp_flags & FGP_CREAT)) {
+		int err;
+		if ((fgp_flags & FGP_WRITE) && mapping_cap_account_dirty(mapping))
+			gfp_mask |= __GFP_WRITE;
+		if (fgp_flags & FGP_NOFS)
+			gfp_mask &= ~__GFP_FS;
+		gfp_mask |= GFP_PRAM;
+		page = mbsfs__page_cache_alloc(gfp_mask);
+		if (!page)
+			return NULL;
+
+		if (WARN_ON_ONCE(!(fgp_flags & FGP_LOCK)))
+			fgp_flags |= FGP_LOCK;
+
+		/* Init accessed so avoid atomic mark_page_accessed later */
+		if (fgp_flags & FGP_ACCESSED)
+			__SetPageReferenced(page);
+
+		if (mapping->flags & __GFP_PRAM)
+			err = add_to_page_cache_locked(page, mapping, offset,
+					gfp_mask);
+		else
+		err = add_to_page_cache_lru(page, mapping, offset,
+				gfp_mask & GFP_RECLAIM_MASK);
+		if (unlikely(err)) {
+			put_page(page);
+			page = NULL;
+			if (err == -EEXIST)
+				goto repeat;
+		}
+	}
+
+	return page;
+}
+struct page *mbsfs_grab_cache_page_write_begin(struct address_space *mapping,
+					pgoff_t index, unsigned flags)
+{
+	struct page *page;
+	int fgp_flags = FGP_LOCK|FGP_WRITE|FGP_CREAT;
+
+	if (flags & AOP_FLAG_NOFS)
+		fgp_flags |= FGP_NOFS;
+
+	page = mbsfs_pagecache_get_page(mapping, index, fgp_flags,
+			mapping_gfp_mask(mapping));
+	if (page)
+		wait_for_stable_page(page);
+
+	return page;
+}
+static int
+mbsfs_write_begin(struct file *file, struct address_space *mapping,
 		loff_t pos, unsigned len, unsigned flags,
 		struct page **pagep, void **fsdata)
 {
+#if 0
 	struct inode *inode = mapping->host;
 	struct mbsFS_inode_info *info = MBS_I(inode);
+#endif
+	struct page *page;
 	pgoff_t index = pos >> PAGE_SHIFT;
 
+	page = mbsfs_grab_cache_page_write_begin(mapping, index, flags);
+	if (!page)
+		return -ENOMEM;
+
+	*pagep = page;
+
+	if (!PageUptodate(page) && (len != PAGE_SIZE)) {
+		unsigned from = pos & (PAGE_SIZE - 1);
+
+		zero_user_segments(page, 0, from, from + len, PAGE_SIZE);
+	}
+	return 0;
+#if 0
 	/* i_mutex is held by caller */
 	if (unlikely(info->seals & (F_SEAL_WRITE | F_SEAL_GROW))) {
 		if (info->seals & F_SEAL_WRITE)
@@ -2254,13 +2405,15 @@ mbsFS_write_begin(struct file *file, struct address_space *mapping,
 	}
 
 	return mbsFS_getpage(inode, index, pagep, MBS_WRITE);
+#endif
 }
 
 	static int
-mbsFS_write_end(struct file *file, struct address_space *mapping,
+mbsfs_write_end(struct file *file, struct address_space *mapping,
 		loff_t pos, unsigned len, unsigned copied,
 		struct page *page, void *fsdata)
 {
+#if 0
 	struct inode *inode = mapping->host;
 
 	if (pos + copied > inode->i_size)
@@ -2285,6 +2438,26 @@ mbsFS_write_end(struct file *file, struct address_space *mapping,
 		}
 		SetPageUptodate(head);
 	}
+#endif
+	struct inode *inode = page->mapping->host;
+	loff_t last_pos = pos + copied;
+
+	/* zero the stale part of the page if we did a short copy */
+	if (!PageUptodate(page)) {
+		if (copied < len) {
+			unsigned from = pos & (PAGE_SIZE - 1);
+
+			zero_user(page, from + copied, len - copied);
+		}
+		SetPageUptodate(page);
+	}
+	/*
+	 * No need to use i_size_read() here, the i_size
+	 * cannot change under us because we hold the i_mutex.
+	 */
+	if (last_pos > inode->i_size)
+		i_size_write(inode, last_pos);
+
 	set_page_dirty(page);
 	unlock_page(page);
 	put_page(page);
@@ -2292,8 +2465,60 @@ mbsFS_write_end(struct file *file, struct address_space *mapping,
 	return copied;
 }
 
-static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
+static ssize_t mbsfs_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 {
+	size_t count = iov_iter_count(iter);
+	ssize_t retval = 0;
+
+	if (!count)
+		goto out; /* skip atime */
+#if 0
+	if (iocb->ki_flags & IOCB_DIRECT) {
+		struct file *file = iocb->ki_filp;
+		struct address_space *mapping = file->f_mapping;
+		struct inode *inode = mapping->host;
+		loff_t size;
+
+		size = i_size_read(inode);
+		if (iocb->ki_flags & IOCB_NOWAIT) {
+			if (filemap_range_has_page(mapping, iocb->ki_pos,
+						iocb->ki_pos + count - 1))
+				return -EAGAIN;
+		} else {
+			retval = filemap_write_and_wait_range(mapping,
+					iocb->ki_pos,
+					iocb->ki_pos + count - 1);
+			if (retval < 0)
+				goto out;
+		}
+
+		file_accessed(file);
+
+		retval = mapping->a_ops->direct_IO(iocb, iter);
+		if (retval >= 0) {
+			iocb->ki_pos += retval;
+			count -= retval;
+		}
+		iov_iter_revert(iter, count - iov_iter_count(iter));
+
+		/*
+		 * Btrfs can have a short DIO read if we encounter
+		 * compressed extents, so if there was an error, or if
+		 * we've already read everything we wanted to, or if
+		 * there was a short read because we hit EOF, go ahead
+		 * and return.  Otherwise fallthrough to buffered io for
+		 * the rest of the read.  Buffered reads will not work for
+		 * DAX files, so don't bother trying.
+		 */
+		if (retval < 0 || !count || iocb->ki_pos >= size ||
+				IS_DAX(inode))
+			goto out;
+	}
+#endif
+	retval = generic_file_buffered_read(iocb, iter, retval);
+out:
+	return retval;
+#if 0
 	struct file *file = iocb->ki_filp;
 	struct inode *inode = file_inode(file);
 	struct address_space *mapping = inode->i_mapping;
@@ -2400,6 +2625,7 @@ static ssize_t mbsFS_file_read_iter(struct kiocb *iocb, struct iov_iter *to)
 	*ppos = ((loff_t) index << PAGE_SHIFT) + offset;
 	file_accessed(file);
 	return retval ? retval : error;
+#endif
 }
 
 /*
@@ -2710,7 +2936,7 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-
+#if 0
 static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
@@ -2842,12 +3068,12 @@ out:
 	inode_unlock(inode);
 	return error;
 }
-
-static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
+#endif
+static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct mbsFS_sb_info *sbinfo = MBS_SB(dentry->d_sb);
 
-	buf->f_type = MBSFS_MAGIC;
+	buf->f_type = dentry->d_sb->s_magic;//MBSFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;
 	buf->f_namelen = NAME_MAX;
 	if (sbinfo->max_blocks) {
@@ -2868,21 +3094,13 @@ static int mbsFS_statfs(struct dentry *dentry, struct kstatfs *buf)
  * File creation. Allocate an inode, and we're done..
  */
 	static int
-mbsFS_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
+mbsfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 {
 	struct inode *inode;
 	int error = -ENOSPC;
 
-	inode = mbsFS_get_inode(dir->i_sb, dir, mode, dev, VM_NORESERVE);
+	inode = mbsfs_get_inode(dir->i_sb, dir, mode, dev, 0);
 	if (inode) {
-		error = simple_acl_create(dir, inode);
-		if (error)
-			goto out_iput;
-		error = security_inode_init_security(inode, dir,
-				&dentry->d_name,
-				mbsFS_initxattrs, NULL);
-		if (error && error != -EOPNOTSUPP)
-			goto out_iput;
 
 		error = 0;
 		dir->i_size += BOGO_DIRENT_SIZE;
@@ -2891,11 +3109,8 @@ mbsFS_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 		dget(dentry); /* Extra count - pin the dentry in core */
 	}
 	return error;
-out_iput:
-	iput(inode);
-	return error;
 }
-
+#if 0
 	static int
 mbsFS_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
@@ -2919,39 +3134,36 @@ out_iput:
 	iput(inode);
 	return error;
 }
-
-static int mbsFS_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
+#endif
+static int mbsfs_mkdir(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	int error;
 
-	if ((error = mbsFS_mknod(dir, dentry, mode | S_IFDIR, 0)))
+	if ((error = mbsfs_mknod(dir, dentry, mode | S_IFDIR, 0)))
 		return error;
 	inc_nlink(dir);
 	return 0;
 }
 
-static int mbsFS_create(struct inode *dir, struct dentry *dentry, umode_t mode,
+static int mbsfs_create(struct inode *dir, struct dentry *dentry, umode_t mode,
 		bool excl)
 {
-	return mbsFS_mknod(dir, dentry, mode | S_IFREG, 0);
+	return mbsfs_mknod(dir, dentry, mode | S_IFREG, 0);
 }
 
 /*
  * Link a file..
  */
-static int mbsFS_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry)
+static int mbsfs_link(struct dentry *old_dentry, struct inode *dir, struct dentry *dentry)
 {
 	struct inode *inode = d_inode(old_dentry);
-	int ret;
+	int ret=0;
 
 	/*
 	 * No ordinary (disk based) filesystem counts links as inodes;
 	 * but each new link needs a new dentry, pinning lowmem, and
 	 * mbsfs dentries cannot be pruned until they are unlinked.
 	 */
-	ret = mbsFS_reserve_inode(inode->i_sb);
-	if (ret)
-		goto out;
 
 	dir->i_size += BOGO_DIRENT_SIZE;
 	inode->i_ctime = dir->i_ctime = dir->i_mtime = current_time(inode);
@@ -2959,34 +3171,30 @@ static int mbsFS_link(struct dentry *old_dentry, struct inode *dir, struct dentr
 	ihold(inode);	/* New dentry reference */
 	dget(dentry);		/* Extra pinning count for the created dentry */
 	d_instantiate(dentry, inode);
-out:
 	return ret;
 }
 
-static int mbsFS_unlink(struct inode *dir, struct dentry *dentry)
+static int mbsfs_unlink(struct inode *dir, struct dentry *dentry)
 {
 	struct inode *inode = d_inode(dentry);
 
-	if (inode->i_nlink > 1 && !S_ISDIR(inode->i_mode))
-		mbsFS_free_inode(inode->i_sb);
-
-	dir->i_size -= BOGO_DIRENT_SIZE;
+	//dir->i_size -= BOGO_DIRENT_SIZE;
 	inode->i_ctime = dir->i_ctime = dir->i_mtime = current_time(inode);
 	drop_nlink(inode);
 	dput(dentry);	/* Undo the count from "create" - this does all the work */
 	return 0;
 }
 
-static int mbsFS_rmdir(struct inode *dir, struct dentry *dentry)
+static int mbsfs_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	if (!simple_empty(dentry))
 		return -ENOTEMPTY;
 
 	drop_nlink(d_inode(dentry));
 	drop_nlink(dir);
-	return mbsFS_unlink(dir, dentry);
+	return mbsfs_unlink(dir, dentry);
 }
-
+#if 0
 static int mbsFS_exchange(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry)
 {
 	bool old_is_dir = d_is_dir(old_dentry);
@@ -3034,27 +3242,27 @@ static int mbsFS_whiteout(struct inode *old_dir, struct dentry *old_dentry)
 	d_rehash(whiteout);
 	return 0;
 }
-
+#endif
 /*
  * The VFS layer already does all the dentry stuff for rename,
  * we just have to decrement the usage count for the target if
  * it exists so that the VFS layer correctly free's it when it
  * gets overwritten.
  */
-static int mbsFS_rename2(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry, unsigned int flags)
+static int mbsfs_rename2(struct inode *old_dir, struct dentry *old_dentry, struct inode *new_dir, struct dentry *new_dentry, unsigned int flags)
 {
 	struct inode *inode = d_inode(old_dentry);
 	int they_are_dirs = S_ISDIR(inode->i_mode);
 
 	if (flags & ~(RENAME_NOREPLACE | RENAME_EXCHANGE | RENAME_WHITEOUT))
 		return -EINVAL;
-
+#if 0
 	if (flags & RENAME_EXCHANGE)
 		return mbsFS_exchange(old_dir, old_dentry, new_dir, new_dentry);
-
+#endif
 	if (!simple_empty(new_dentry))
 		return -ENOTEMPTY;
-
+#if 0
 	if (flags & RENAME_WHITEOUT) {
 		int error;
 
@@ -3062,9 +3270,9 @@ static int mbsFS_rename2(struct inode *old_dir, struct dentry *old_dentry, struc
 		if (error)
 			return error;
 	}
-
+#endif
 	if (d_really_is_positive(new_dentry)) {
-		(void) mbsFS_unlink(new_dir, new_dentry);
+		(void) mbsfs_unlink(new_dir, new_dentry);
 		if (they_are_dirs) {
 			drop_nlink(d_inode(new_dentry));
 			drop_nlink(old_dir);
@@ -3074,69 +3282,73 @@ static int mbsFS_rename2(struct inode *old_dir, struct dentry *old_dentry, struc
 		inc_nlink(new_dir);
 	}
 
-	old_dir->i_size -= BOGO_DIRENT_SIZE;
-	new_dir->i_size += BOGO_DIRENT_SIZE;
+	//old_dir->i_size -= BOGO_DIRENT_SIZE;
+	//new_dir->i_size += BOGO_DIRENT_SIZE;
 	old_dir->i_ctime = old_dir->i_mtime =
 		new_dir->i_ctime = new_dir->i_mtime =
 		inode->i_ctime = current_time(old_dir);
 	return 0;
 }
+int __mbsfs_page_symlink(struct inode *inode, const char *symname, int len, int nofs)
+{
+	struct address_space *mapping = inode->i_mapping;
+	struct page *page;
+	void *fsdata;
+	int err;
+	unsigned int flags = 0;
+	if (nofs)
+		flags |= AOP_FLAG_NOFS;
 
+retry:
+	err = pagecache_write_begin(NULL, mapping, 0, len-1,
+			flags, &page, &fsdata);
+	if (err)
+		goto fail;
+
+	memcpy(page_address(page), symname, len-1);
+
+	err = pagecache_write_end(NULL, mapping, 0, len-1, len-1,
+			page, fsdata);
+	if (err < 0)
+		goto fail;
+	if (err < len-1)
+		goto retry;
+
+	mark_inode_dirty(inode);
+	return 0;
+fail:
+	return err;
+}
+
+int mbsfs_page_symlink(struct inode *inode, const char *symname, int len)
+{
+	return __mbsfs_page_symlink(inode, symname, len,
+			!mapping_gfp_constraint(inode->i_mapping, __GFP_FS));
+}
 static int mbsFS_symlink(struct inode *dir, struct dentry *dentry, const char *symname)
 {
-	int error;
+	int error = -ENOSPC;
 	int len;
 	struct inode *inode;
 	struct page *page;
-	struct mbsFS_inode_info *info;
 
 	len = strlen(symname) + 1;
 	if (len > PAGE_SIZE)
 		return -ENAMETOOLONG;
 
-	inode = mbsFS_get_inode(dir->i_sb, dir, S_IFLNK|S_IRWXUGO, 0, VM_NORESERVE);
+	inode = mbsfs_get_inode(dir->i_sb, dir, S_IFLNK|S_IRWXUGO, 0,0);
 	if (!inode)
 		return -ENOSPC;
 
-	error = security_inode_init_security(inode, dir, &dentry->d_name,
-			mbsFS_initxattrs, NULL);
-	if (error) {
-		if (error != -EOPNOTSUPP) {
-			iput(inode);
-			return error;
-		}
-		error = 0;
-	}
+	error = mbsfs_page_symlink(inode, symname,l);
+	if (!error) {
+		d_instantiate(dentry, inode);
+		dget(dentry);
+		dir->i_mtime = dir->i_ctime = current_time(dir);
+	} else
+		iput(inode);
 
-	info = MBS_I(inode);
-	inode->i_size = len-1;
-	if (len <= SHORT_SYMLINK_LEN) {
-		inode->i_link = kmemdup(symname, len, GFP_KERNEL);
-		if (!inode->i_link) {
-			iput(inode);
-			return -ENOMEM;
-		}
-		inode->i_op = &mbsFS_short_symlink_operations;
-	} else {
-		inode_nohighmem(inode);
-		error = mbsFS_getpage(inode, 0, &page, MBS_WRITE);
-		if (error) {
-			iput(inode);
-			return error;
-		}
-		inode->i_mapping->a_ops = &mbsFS_aops;
-		inode->i_op = &mbsFS_symlink_inode_operations;
-		memcpy(page_address(page), symname, len);
-		SetPageUptodate(page);
-		set_page_dirty(page);
-		unlock_page(page);
-		put_page(page);
-	}
-	dir->i_size += BOGO_DIRENT_SIZE;
-	dir->i_ctime = dir->i_mtime = current_time(dir);
-	d_instantiate(dentry, inode);
-	dget(dentry);
-	return 0;
+	return error;
 }
 
 static void mbsFS_put_link(void *arg)
@@ -3180,6 +3392,7 @@ static const char *mbsFS_get_link(struct dentry *dentry,
 /*
  * Callback for security_inode_init_security() for acquiring xattrs.
  */
+#if 0
 static int mbsFS_initxattrs(struct inode *inode,
 		const struct xattr *xattr_array,
 		void *fs_info)
@@ -3212,7 +3425,7 @@ static int mbsFS_initxattrs(struct inode *inode,
 
 	return 0;
 }
-
+#endif
 static int mbsFS_xattr_handler_get(const struct xattr_handler *handler,
 		struct dentry *unused, struct inode *inode,
 		const char *name, void *buffer, size_t size)
@@ -3313,7 +3526,7 @@ static struct dentry *mbsFS_fh_to_dentry(struct super_block *sb,
 
 	return dentry;
 }
-
+#if 0
 static int mbsFS_encode_fh(struct inode *inode, __u32 *fh, int *len,
 		struct inode *parent)
 {
@@ -3349,8 +3562,39 @@ static const struct export_operations mbsFS_export_ops = {
 	.encode_fh      = mbsFS_encode_fh,
 	.fh_to_dentry	= mbsFS_fh_to_dentry,
 };
+#endif
+static int mbsfs_parse_options(char *data, struct mbsfs_mount_opts *opts)
+{
+	substring_t args[MAX_OPT_ARGS];
+	int option;
+	int token;
+	char *p;
 
+	opts->mode = MBSFS_DEFAULT_MODE;
 
+	while ((p = strsep(&data, ",")) != NULL) {
+		if (!*p)
+			continue;
+
+		token = match_token(p, tokens, args);
+		switch (token) {
+			case Opt_mode:
+				if (match_octal(&args[0], &option))
+					return -EINVAL;
+				opts->mode = option & S_IALLUGO;
+				break;
+				/*
+				 * We might like to report bad mount options here;
+				 * but traditionally ramfs has ignored all mount options,
+				 * and as it is used as a !CONFIG_SHMEM simple substitute
+				 * for tmpfs, better continue to ignore other mount options.
+				 */
+		}
+	}
+
+	return 0;
+}
+#if 0
 static int mbsFS_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
 		bool remount)
 {
@@ -3514,9 +3758,15 @@ out:
 	spin_unlock(&sbinfo->stat_lock);
 	return error;
 }
+#endif
 
-static int mbsFS_show_options(struct seq_file *seq, struct dentry *root)
+static int mbsfs_show_options(struct seq_file *seq, struct dentry *root)
 {
+	struct mbsfs_fs_info *fsi = root->d_sb->s_fs_info;
+
+	if (fsi->mount_opts.mode != MBSFS_DEFAULT_MODE)
+		seq_printf(m, ",mode=%o", fsi->mount_opts.mode);
+#if 0
 	struct mbsFS_sb_info *sbinfo = MBS_SB(root->d_sb);
 
 	if (sbinfo->max_blocks != mbsFS_default_max_blocks())
@@ -3533,6 +3783,7 @@ static int mbsFS_show_options(struct seq_file *seq, struct dentry *root)
 		seq_printf(seq, ",gid=%u",
 				from_kgid_munged(&init_user_ns, sbinfo->gid));
 	mbsFS_show_mpol(seq, sbinfo->mpol);
+#endif
 	return 0;
 }
 
@@ -3640,7 +3891,7 @@ static void mbsFS_put_super(struct super_block *sb)
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
-	mpol_put(sbinfo->mpol);
+	//mpol_put(sbinfo->mpol);
 	//mpol_put_pram(sbinfo->mpol);
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
@@ -3648,6 +3899,34 @@ static void mbsFS_put_super(struct super_block *sb)
 
 int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 {
+	struct mbsfs_fs_info *fsi;
+	struct inode *inode;
+	int err;
+
+	fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
+	sb->s_fs_info = fsi;
+	if (!fsi)
+		return -ENOMEM;
+
+	err = mbsfs_parse_options(data, &fsi->mount_opts);
+	if (err)
+		return err;
+
+	sb->s_maxbytes		= MAX_LFS_FILESIZE;
+	sb->s_blocksize		= PAGE_SIZE;
+	sb->s_blocksize_bits	= PAGE_SHIFT;
+	sb->s_magic		= MBSFS_MAGIC;
+	sb->s_op		= &mbsfs_ops;
+	sb->s_time_gran		= 1;
+
+	uuid_gen(&sb->s_uuid);
+	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0);
+	sb->s_root = d_make_root(inode);
+	if (!sb->s_root)
+		return -ENOMEM;
+
+	return 0;
+#if 0
 	struct mbsFS_sb_info *sbinfo;
 	struct inode *inode;
 	int err = -ENOMEM;
@@ -3714,10 +3993,11 @@ int mbsFS_fill_super(struct super_block *sb, void *data, int silent)
 failed:
 	mbsFS_put_super(sb);
 	return err;
+#endif
 }
 
 static struct kmem_cache *mbsFS_inode_cachep;
-
+#if 0
 static struct inode *mbsFS_alloc_inode(struct super_block *sb)
 {
 	struct mbsFS_inode_info *info;
@@ -3726,7 +4006,7 @@ static struct inode *mbsFS_alloc_inode(struct super_block *sb)
 		return NULL;
 	return &info->vfs_inode;
 }
-
+#endif
 static void mbsFS_destroy_callback(struct rcu_head *head)
 {
 	struct inode *inode = container_of(head, struct inode, i_rcu);
@@ -3734,14 +4014,14 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 		kfree(inode->i_link);
 	kmem_cache_free(mbsFS_inode_cachep, MBS_I(inode));
 }
-
+#if 0
 static void mbsFS_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
 		mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
-
+#endif
 static void mbsFS_init_inode(void *foo)
 {
 	struct mbsFS_inode_info *info = foo;
@@ -3764,29 +4044,36 @@ static void mbsFS_destroy_inodecache(void)
 static const struct address_space_operations mbsFS_aops = {
 	//	.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
-	.write_begin	= mbsFS_write_begin,
-	.write_end	= mbsFS_write_end,
+	.write_begin	= mbsfs_write_begin,
+	.write_end	= mbsfs_write_end,
+	.readpage	= mbsfs_readpage,
+#if 0
 #ifdef CONFIG_MIGRATION
 	.migratepage	= migrate_page,
 #endif
 	.error_remove_page = generic_error_remove_page,
+#endif
 };
 
-static const struct file_operations mbsFS_file_operations = {
-	.mmap		= mbsFS_mmap,
-	.get_unmapped_area = mbsFS_get_unmapped_area,
-	.llseek		= mbsFS_file_llseek,
-	.read_iter	= mbsFS_file_read_iter,
-	.write_iter	= mbsFS_file_write_iter,
+static const struct file_operations mbsfs_file_operations = {
+	.read_iter	= mbsfs_file_read_iter,
+	.write_iter	= mbsfs_file_write_iter,
+//	.mmap		= mbsFS_mmap,
 	.fsync		= noop_fsync,
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
-	.fallocate	= mbsFS_fallocate,
+	.llseek		= generic_file_llseek,
+	.get_unmapped_area = mbsfs_mmu_get_unmapped_area,
+	//.llseek		= mbsFS_file_llseek,
+	//.get_unmapped_area = mbsFS_get_unmapped_area,
+	//.fallocate	= mbsFS_fallocate,
 };
 
 static const struct inode_operations mbsFS_inode_operations = {
-	.getattr	= mbsFS_getattr,
-	.setattr	= mbsFS_setattr,
+	.getattr	= simple_getattr,
+	.setattr	= simple_setattr,
+	//.getattr	= mbsFS_getattr,
+	//.setattr	= mbsFS_setattr,
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
 	.set_acl	= simple_set_acl,
@@ -3794,15 +4081,16 @@ static const struct inode_operations mbsFS_inode_operations = {
 };
 
 static const struct inode_operations mbsFS_dir_inode_operations = {
-	.create		= mbsFS_create,
+	.create		= mbsfs_create,
 	.lookup		= simple_lookup,
-	.link		= mbsFS_link,
-	.unlink		= mbsFS_unlink,
-	.symlink	= mbsFS_symlink,
-	.mkdir		= mbsFS_mkdir,
-	.rmdir		= mbsFS_rmdir,
-	.mknod		= mbsFS_mknod,
-	.rename		= mbsFS_rename2,
+	.link		= mbsfs_link,
+	.unlink		= mbsfs_unlink,
+	.symlink	= mbsfs_symlink,
+	.mkdir		= mbsfs_mkdir,
+	.rmdir		= mbsfs_rmdir,
+	.mknod		= mbsfs_mknod,
+	.rename		= mbsfs_rename2,
+#if 0
 	.tmpfile	= mbsFS_tmpfile,
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
@@ -3810,6 +4098,7 @@ static const struct inode_operations mbsFS_dir_inode_operations = {
 #ifdef CONFIG_MBSFS_POSIX_ACL
 	.setattr	= mbsFS_setattr,
 	.set_acl	= simple_set_acl,
+#endif
 #endif
 };
 
@@ -3824,17 +4113,28 @@ static const struct inode_operations mbsFS_special_inode_operations = {
 };
 
 
-static const struct super_operations mbsFS_ops = {
-	.alloc_inode	= mbsFS_alloc_inode,
-	.destroy_inode	= mbsFS_destroy_inode,
-	.statfs		= mbsFS_statfs,
-	.remount_fs	= mbsFS_remount_fs,
-	.show_options	= mbsFS_show_options,
-	.evict_inode	= mbsFS_evict_inode,
+static const struct super_operations mbsfs_ops = {
+	//.alloc_inode	= mbsFS_alloc_inode,
+	//.destroy_inode	= mbsFS_destroy_inode,
+	.statfs		= mbsfs_statfs,
+	//.remount_fs	= mbsFS_remount_fs,
+	.show_options	= mbsfs_show_options,
+	//.evict_inode	= mbsFS_evict_inode,
 	.drop_inode	= generic_delete_inode,
 	.put_super	= mbsFS_put_super,
 };
+enum {
+	Opt_mode,
+	Opt_err
+};
 
+static const match_table_t tokens = {
+	{Opt_mode, "mode=%o"},
+	{Opt_err, NULL}
+};
+
+
+#if 0
 static const struct vm_operations_struct mbsFS_vm_ops = {
 	.fault		= mbsFS_fault,
 	.map_pages	= filemap_map_pages,
@@ -3843,11 +4143,11 @@ static const struct vm_operations_struct mbsFS_vm_ops = {
 	.get_policy     = mbsFS_get_policy,
 #endif
 };
-
-static struct dentry *mbsFS_mount(struct file_system_type *fs_type,
+#endif
+static struct dentry *mbsfs_mount(struct file_system_type *fs_type,
 		int flags, const char *dev_name, void *data)
 {
-	struct dentry *const entry = mount_nodev(fs_type, flags, data, mbsFS_fill_super);
+	struct dentry *const entry = mount_nodev(fs_type, flags, data, mbsfs_fill_super);
 	if (IS_ERR(entry))
 		pr_err("mbsFS mount failed\n");
 	else
@@ -3871,7 +4171,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 static struct file_system_type mbsFS_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "mbsfs",
-	.mount		= mbsFS_mount,
+	.mount		= mbsfs_mount,
 	.kill_sb	= mbsfs_kill_sb,
 	.fs_flags	= FS_USERNS_MOUNT,
 };
