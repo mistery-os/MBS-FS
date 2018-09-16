@@ -121,6 +121,7 @@ extern void lru_add_drain_all(void);
 extern struct mempolicy default_pram_policy;
 extern ssize_t generic_file_buffered_read(struct kiocb *iocb,
 		struct iov_iter *iter, ssize_t written);
+extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //extern struct file *hugetlb_file_setup(const char *name, size_t size, vm_flags_t acct,
 //				struct user_struct **user, int creat_flags,
 //				int page_size_log);
@@ -2279,6 +2280,7 @@ int mbsfs_readpage(struct file *file, struct page *page)
 	unlock_page(page);
 	return 0;
 }
+#if 0
 static inline struct page *
 mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
@@ -2304,6 +2306,7 @@ struct page *mbsfs__page_cache_alloc(gfp_t gfp)
 	}
 	return alloc_prams(gfp, 0);
 }
+#endif
 struct page *mbsfs_pagecache_get_page(struct address_space *mapping, pgoff_t offset,
 	int fgp_flags, gfp_t gfp_mask)
 {
