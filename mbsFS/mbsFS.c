@@ -1155,11 +1155,11 @@ out:
 	put_page(page);
 	return error;
 }
-#endif
+
 /*
  * Move the page from the page cache to the swap cache.
  */
-#if 0
+
 static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 {
 	struct mbsFS_inode_info *info;
@@ -1265,7 +1265,7 @@ redirty:
 	unlock_page(page);
 	return 0;
 }
-#endif
+
 
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
@@ -1308,7 +1308,7 @@ static void mbsFS_pseudo_vma_destroy(struct vm_area_struct *vma)
 	/* Drop reference taken by mpol_mbsfs_policy_lookup() */
 	mpol_cond_put_pram(vma->vm_policy);
 }
-#if 0
+
 static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
