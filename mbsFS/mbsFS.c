@@ -3496,7 +3496,7 @@ static ssize_t mbsFS_listxattr(struct dentry *dentry, char *buffer, size_t size)
 	struct mbsFS_inode_info *info = MBS_I(d_inode(dentry));
 	return simple_xattr_list(d_inode(dentry), &info->xattrs, buffer, size);
 }
-#endif /* CONFIG_MBSFS_XATTR */
+//#endif /* CONFIG_MBSFS_XATTR */
 
 static const struct inode_operations mbsFS_short_symlink_operations = {
 	.get_link	= simple_get_link,
@@ -3548,7 +3548,7 @@ static struct dentry *mbsFS_fh_to_dentry(struct super_block *sb,
 
 	return dentry;
 }
-#if 0
+
 static int mbsFS_encode_fh(struct inode *inode, __u32 *fh, int *len,
 		struct inode *parent)
 {
@@ -3906,7 +3906,7 @@ err_name:
 	kfree(name);
 	return error;
 }
-#endif
+
 
 static void mbsFS_put_super(struct super_block *sb)
 {
@@ -3918,7 +3918,7 @@ static void mbsFS_put_super(struct super_block *sb)
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
-
+#endif
 int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 {
 	struct mbsfs_fs_info *fsi;
@@ -4341,7 +4341,6 @@ int mbsFS_zero_setup(struct vm_area_struct *vma)
 
 	return 0;
 }
-#endif
 /**
  * mbsFS_read_mapping_page_gfp - read into page cache, using specified page allocation flags.
  * @mapping:	the page's address_space
@@ -4374,6 +4373,7 @@ struct page *mbsFS_read_mapping_page_gfp(struct address_space *mapping,
 	return page;
 }
 //EXPORT_SYMBOL_GPL(mbsFS_read_mapping_page_gfp);
+#endif
 
 /*###########################################################################*/
 /*###########################################################################*/
