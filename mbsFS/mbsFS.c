@@ -346,7 +346,7 @@ static void mbsFS_free_inode(struct super_block *sb)
 		spin_unlock(&sbinfo->stat_lock);
 	}
 }
-#endif
+
 
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
@@ -477,7 +477,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_FORCE	(-2)
 
 #define mbsFS_huge MBS_HUGE_DENY
-#if 0
+
 static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
