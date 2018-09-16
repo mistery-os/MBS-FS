@@ -3909,12 +3909,14 @@ err_name:
 
 static void mbsFS_put_super(struct super_block *sb)
 {
+#if 0
 	struct mbsFS_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
 	//mpol_put(sbinfo->mpol);
 	//mpol_put_pram(sbinfo->mpol);
-	kfree(sbinfo);
+#endif
+	kfree(sb->s_fs_info);
 	sb->s_fs_info = NULL;
 }
 
