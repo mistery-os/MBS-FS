@@ -312,7 +312,7 @@ static const struct inode_operations mbsfs_inode_operations;
 static const struct inode_operations mbsfs_dir_inode_operations;
 //static const struct inode_operations mbsFS_special_inode_operations;
 //static const struct vm_operations_struct mbsFS_vm_ops;
-//static struct file_system_type mbsFS_fs_type;
+static struct file_system_type mbsfs_fs_type;
 static int mbsfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname);
 
 #if 0
@@ -2290,7 +2290,7 @@ mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 	return __alloc_pages(gfp_mask, order, nid);
 }
 struct page *mbsfs__page_cache_alloc(gfp_t gfp)
-{
+{//when compile as a module cpuset_mem_spread_node related build error happened
 	int n;
 	struct page *page;
 
@@ -2314,7 +2314,7 @@ struct page *mbsfs_pagecache_get_page(struct address_space *mapping, pgoff_t off
 
 repeat:
 	page = find_get_entry(mapping, offset);
-	if (radix_tree_exceptional_entry(page))
+	if (radix_tree_exceptional_entry(page))//in swap area
 		page = NULL;
 	if (!page)
 		goto no_page;
@@ -2360,12 +2360,12 @@ no_page:
 		if (fgp_flags & FGP_ACCESSED)
 			__SetPageReferenced(page);
 
-		if (mapping->flags & __GFP_PRAM)
+		//if (mapping->flags & __GFP_PRAM)
 			err = add_to_page_cache_locked(page, mapping, offset,
-					gfp_mask);
-		else
-		err = add_to_page_cache_lru(page, mapping, offset,
-				gfp_mask & GFP_RECLAIM_MASK);
+					gfp_mask);//doesnot add LRU
+		//else
+		//	err = add_to_page_cache_lru(page, mapping, offset,
+		//			gfp_mask & GFP_RECLAIM_MASK);
 		if (unlikely(err)) {
 			put_page(page);
 			page = NULL;
@@ -2377,7 +2377,7 @@ no_page:
 	return page;
 }
 struct page *mbsfs_grab_cache_page_write_begin(struct address_space *mapping,
-					pgoff_t index, unsigned flags)
+		pgoff_t index, unsigned flags)
 {
 	struct page *page;
 	int fgp_flags = FGP_LOCK|FGP_WRITE|FGP_CREAT;
@@ -2392,7 +2392,7 @@ struct page *mbsfs_grab_cache_page_write_begin(struct address_space *mapping,
 
 	return page;
 }
-static int
+	static int
 mbsfs_write_begin(struct file *file, struct address_space *mapping,
 		loff_t pos, unsigned len, unsigned flags,
 		struct page **pagep, void **fsdata)
@@ -4084,7 +4084,7 @@ static const struct address_space_operations mbsfs_aops = {
 static const struct file_operations mbsfs_file_operations = {
 	.read_iter	= mbsfs_file_read_iter,
 	.write_iter	= mbsfs_file_write_iter,
-//	.mmap		= mbsFS_mmap,
+	//	.mmap		= mbsFS_mmap,
 	.fsync		= noop_fsync,
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
@@ -4184,7 +4184,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	kill_anon_super(sb);
 	pr_debug("mbsFS_kill_sb successfully finished\n");
 }
-static struct file_system_type mbsFS_fs_type = {
+static struct file_system_type mbsfs_fs_type = {
 	.owner		= THIS_MODULE,
 	.name		= "mbsfs",
 	.mount		= mbsfs_mount,
@@ -4202,7 +4202,7 @@ static int __init mbsFS_init(void)
 	error = mbsFS_init_inodecache();
 	if (error)
 		goto out2;
-	error = register_filesystem(&mbsFS_fs_type);
+	error = register_filesystem(&mbsfs_fs_type);
 	if (error) {
 		pr_err("Could not register mbsfs\n");
 		goto out1;
@@ -4217,7 +4217,7 @@ out2:
 }
 static void __exit mbsFS_exit(void)
 {
-	unregister_filesystem(&mbsFS_fs_type);
+	unregister_filesystem(&mbsfs_fs_type);
 	mbsFS_destroy_inodecache();
 	pr_debug("mbsFS_exit successed.\n");
 }
