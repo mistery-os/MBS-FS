@@ -3926,7 +3926,7 @@ static void mbsfs_put_super(struct super_block *sb)
 	////mpol_put(sbinfo->mpol);
 	//mpol_put_pram(sbinfo->mpol);
 //#endif
-	//kfree(sb->s_fs_info); //-->do at the kill_sb
+	//kfree(sb->s_fs_info); //-->do at the mbsfs_kill_sb
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
@@ -4190,7 +4190,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	   */
 	/* umount */
 	if (sb->s_fs_info != NULL)
-		kill(sb->s_fs_info);
+		kfree(sb->s_fs_info);
 	if (sb->s_root)
 		d_genocide(sb->s_root);
 	kill_anon_super(sb);
