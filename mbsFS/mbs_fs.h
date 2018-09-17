@@ -13,7 +13,7 @@ struct mbsfs_mount_opts {
 	umode_t mode;
 };
 
-struct mbmfs_fs_info {
+struct mbsfs_fs_info {
 	struct mbsfs_mount_opts mount_opts;
 };
 

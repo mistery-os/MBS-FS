@@ -299,6 +299,7 @@ bool vma_is_mbsFS(struct vm_area_struct *vma)
 
 static LIST_HEAD(mbsFS_swaplist);
 static DEFINE_MUTEX(mbsFS_swaplist_mutex);
+#endif
 
 static int mbsfs_reserve_inode(struct super_block *sb)
 {
@@ -314,6 +315,7 @@ static int mbsfs_reserve_inode(struct super_block *sb)
 	}
 	return 0;
 }
+#if 0
 static void mbsfs_free_inode(struct super_block *sb)
 {
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
@@ -323,7 +325,6 @@ static void mbsfs_free_inode(struct super_block *sb)
 		spin_unlock(&sbinfo->stat_lock);
 	}
 }
-
 
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
@@ -3598,7 +3599,7 @@ static int mbsfs_parse_options(char *data, struct mbsfs_mount_opts *opts)
 	return 0;
 }
 #endif
-static int mbsfs_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
+static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 		bool remount, struct mbsfs_mount_opts *opts)
 {
 	substring_t args[MAX_OPT_ARGS];
