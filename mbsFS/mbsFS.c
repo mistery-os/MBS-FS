@@ -315,7 +315,6 @@ static int mbsfs_reserve_inode(struct super_block *sb)
 	}
 	return 0;
 }
-#if 0
 static void mbsfs_free_inode(struct super_block *sb)
 {
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
@@ -325,7 +324,7 @@ static void mbsfs_free_inode(struct super_block *sb)
 		spin_unlock(&sbinfo->stat_lock);
 	}
 }
-
+#if 0
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
  * @inode: inode to recalc
@@ -2045,9 +2044,9 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 		inode->i_generation = get_seconds();//rNO
 		info = MBS_I(inode);
 		memset(info, 0, (char *)inode - (char *)info);
-		//spin_lock_init(&info->lock);			/rNO
+		spin_lock_init(&info->lock);			/rNO
 		//info->seals = F_SEAL_SEAL;			/rNO
-		//info->flags = flags; // & VM_NORESERVE;	//rNO
+		info->flags = flags; // & VM_NORESERVE;	//rNO
 		////INIT_LIST_HEAD(&info->shrinklist);		//rNO
 		////INIT_LIST_HEAD(&info->swaplist);		//rNO
 		//simple_xattrs_init(&info->xattrs);		//rNO
@@ -2055,7 +2054,7 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 
 		switch (mode & S_IFMT) {
 			default:
-				//inode->i_op = &mbsFS_special_inode_operations;
+				inode->i_op = &mbsfs_special_inode_operations;
 				init_special_inode(inode, mode, dev);
 				break;
 			case S_IFREG:
@@ -2072,9 +2071,11 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 			case S_IFLNK:
 				inode->i_op = &page_symlink_inode_operations;
 				inode_nohighmem(inode);
+				mpol_mbsfs_policy_init(&info->policy, NULL);
 				break;
 		}
 	} else {
+		mbsfs_free_inode(sb);
 		pr_err("inode allocation failed\n");
 	}
 	return inode;
@@ -2256,7 +2257,7 @@ int mbsfs_readpage(struct file *file, struct page *page)
 	return 0;
 }
 #if 0
-static inline struct page *
+	static inline struct page *
 mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
 	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
@@ -2283,7 +2284,7 @@ struct page *mbsfs__page_cache_alloc(gfp_t gfp)
 }
 #endif
 struct page *mbsfs_pagecache_get_page(struct address_space *mapping, pgoff_t offset,
-	int fgp_flags, gfp_t gfp_mask)
+		int fgp_flags, gfp_t gfp_mask)
 {
 	struct page *page;
 
@@ -2336,8 +2337,8 @@ no_page:
 			__SetPageReferenced(page);
 
 		//if (mapping->flags & __GFP_PRAM)
-			err = add_to_page_cache_locked(page, mapping, offset,
-					gfp_mask);//doesnot add LRU
+		err = add_to_page_cache_locked(page, mapping, offset,
+				gfp_mask);//doesnot add LRU
 		//else
 		//	err = add_to_page_cache_lru(page, mapping, offset,
 		//			gfp_mask & GFP_RECLAIM_MASK);
@@ -3073,7 +3074,7 @@ static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_type = dentry->d_sb->s_magic;//MBSFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;
 	buf->f_namelen = NAME_MAX;
-//#if 0								//rNO
+	//#if 0								//rNO
 	if (sbinfo->max_blocks) {
 		buf->f_blocks = sbinfo->max_blocks;
 		buf->f_bavail =
@@ -3085,7 +3086,7 @@ static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 		buf->f_ffree = sbinfo->free_inodes;
 	}
 	/* else leave those fields 0 like simple_statfs */
-//#endif							//rNO
+	//#endif							//rNO
 	return 0;
 }
 
@@ -3109,7 +3110,7 @@ mbsfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 	return error;
 }
 #if 0
-static int
+	static int
 mbsFS_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct inode *inode;
@@ -3696,8 +3697,8 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 			mpol_put_pram(mpol);
 			mpol = NULL;
 			if (mpol_parse_str(value, &mpol))
-			if (mpol_parse_str_pram(value, &mpol))
-				goto bad_val;
+				if (mpol_parse_str_pram(value, &mpol))
+					goto bad_val;
 #endif
 #endif
 		} else {
@@ -3705,7 +3706,7 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 			goto error;
 		}
 	}
-//	sbinfo->mpol = mpol;
+	//	sbinfo->mpol = mpol;
 	return 0;
 
 bad_val:
@@ -3921,13 +3922,13 @@ err_name:
 
 static void mbsfs_put_super(struct super_block *sb)
 {
-//#if 0							//rNO
+	//#if 0							//rNO
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
 	////mpol_put(sbinfo->mpol);
 	//mpol_put_pram(sbinfo->mpol);
-//#endif
+	//#endif
 	//kfree(sb->s_fs_info); //-->do at the mbsfs_kill_sb
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
@@ -3942,7 +3943,7 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 
 	/* Round up to L1_CACHE_BYTES to resist false sharing */
 	sbinfo = kzalloc(max((int)sizeof(struct mbsfs_sb_info), L1_CACHE_BYTES),
-		       	GFP_KERNEL);
+			GFP_KERNEL);
 	if (!sbinfo)
 		return -ENOMEM;
 
@@ -3950,7 +3951,7 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->uid = current_fsuid();
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
-/* simple-mbsfs
+	/* simple-mbsfs
 	//fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
 	//sb->s_fs_info = fsi;
 	//if (!fsi)
@@ -3958,7 +3959,7 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	//err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
 	//if (err)
 	//	return err;
-*/
+	*/
 	/*
 	 * Per default we allow the physical pram per
 	 * mbsfs instance, limiting inodes to one per page of lowmem;
@@ -3981,8 +3982,8 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	if (percpu_counter_init(&sbinfo->used_blocks, 0, GFP_KERNEL))
 		goto failed;
 	sbinfo->free_inodes = sbinfo->max_inodes;
-//	spin_lock_init(&sbinfo->shrinklist_lock);
-//	INIT_LIST_HEAD(&sbinfo->shrinklist);
+	//	spin_lock_init(&sbinfo->shrinklist_lock);
+	//	INIT_LIST_HEAD(&sbinfo->shrinklist);
 
 	sb->s_maxbytes		= MAX_LFS_FILESIZE;
 	sb->s_blocksize		= PAGE_SIZE;
@@ -4131,6 +4132,7 @@ static const struct inode_operations mbsfs_dir_inode_operations = {
 	.rename		= mbsfs_rename2,
 #if 0
 	.tmpfile	= mbsFS_tmpfile,
+#endif
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
 #endif
@@ -4138,10 +4140,9 @@ static const struct inode_operations mbsfs_dir_inode_operations = {
 	.setattr	= mbsFS_setattr,
 	.set_acl	= simple_set_acl,
 #endif
-#endif
 };
 
-static const struct inode_operations mbsFS_special_inode_operations = {
+static const struct inode_operations mbsfs_special_inode_operations = {
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
 #endif
