@@ -1500,7 +1500,7 @@ static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 repeat:
 	swap.val = 0;
 	//page = find_lock_entry(mapping, index);	//complex style
-	page = find_get_entry(mapping, offset);		//simple style
+	page = find_get_entry(mapping, index);		//simple style
 	
 	if (radix_tree_exceptional_entry(page)) {
 	   //swap = radix_to_swp_entry(page);
@@ -1655,7 +1655,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 		}
 //#if 0
 		if (IS_ERR(page)) {
-			return NULL;
+			return ENOSPC;
 			int retry = 5;
 			error = PTR_ERR(page);
 			page = NULL;
