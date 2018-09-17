@@ -4183,9 +4183,6 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	   generic_shutdown_super(sb);
 	   free_anon_bdev(dev);
 	   */
-	/* umount */
-	if (sb->s_fs_info != NULL)
-		kfree(sb->s_fs_info);
 	if (sb->s_root)
 		d_genocide(sb->s_root);
 	kill_anon_super(sb);
