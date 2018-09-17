@@ -4027,17 +4027,17 @@ failed:
 }
 
 static struct kmem_cache *mbsfs_inode_cachep;
-#if 0
-static struct inode *mbsFS_alloc_inode(struct super_block *sb)
+
+static struct inode *mbsfs_alloc_inode(struct super_block *sb)
 {
-	struct mbsFS_inode_info *info;
+	struct mbsfs_inode_info *info;
 	info = kmem_cache_alloc(mbsfs_inode_cachep, GFP_KERNEL);
 	if (!info)
 		return NULL;
 	return &info->vfs_inode;
 }
 
-static void mbsFS_destroy_callback(struct rcu_head *head)
+static void mbsfs_destroy_callback(struct rcu_head *head)
 {
 	struct inode *inode = container_of(head, struct inode, i_rcu);
 	if (S_ISLNK(inode->i_mode))
@@ -4045,13 +4045,13 @@ static void mbsFS_destroy_callback(struct rcu_head *head)
 	kmem_cache_free(mbsfs_inode_cachep, MBS_I(inode));
 }
 
-static void mbsFS_destroy_inode(struct inode *inode)
+static void mbsfs_destroy_inode(struct inode *inode)
 {
 	if (S_ISREG(inode->i_mode))
 		mpol_free_mbsfs_policy(&MBS_I(inode)->policy);
-	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
+	call_rcu(&inode->i_rcu, mbsfs_destroy_callback);
 }
-#endif
+
 static void mbsfs_init_inode(void *foo)
 {
 	struct mbsfs_inode_info *info = foo;
@@ -4149,8 +4149,8 @@ static const struct super_operations mbsfs_ops = {
 	.show_options	= mbsfs_show_options,
 	.put_super	= mbsfs_put_super,			//rNO
 	//.remount_fs	= mbsFS_remount_fs,			//rNO
-	//.alloc_inode	= mbsFS_alloc_inode,			//rNO
-	//.destroy_inode	= mbsFS_destroy_inode,		//rNO
+	.alloc_inode	= mbsfs_alloc_inode,			//rNO
+	.destroy_inode	= mbsfs_destroy_inode,		//rNO
 	//.evict_inode	= mbsFS_evict_inode,			//rNO
 };
 
