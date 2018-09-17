@@ -133,7 +133,7 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //####################
 //####################
 //####################
-
+#if 0
 static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 		unsigned long addr, unsigned long len, unsigned long pgoff,
 		unsigned long flags)
@@ -141,14 +141,14 @@ static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 	return current->mm->get_unmapped_area(file, addr, len, pgoff, flags);
 }
 
-//static inline struct file *
-//hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
-//		struct user_struct **user, int creat_flags,
-//		int page_size_log)
-//{
-//	return ERR_PTR(-ENOSYS);
-//}
-
+static inline struct file *
+hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
+		struct user_struct **user, int creat_flags,
+		int page_size_log)
+{
+	return ERR_PTR(-ENOSYS);
+}
+#endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
  * mbsFS_fallocate communicates with mbsfs_fault or mbsFS_writepage via
@@ -171,8 +171,6 @@ static unsigned long mbsfs_default_max_inodes(void)
 	return min(totalpram_pages - totalhigh_pages, totalpram_pages);
 }
 
-
-#if 0
 struct mbsfs_falloc {
 	wait_queue_head_t *waitq; /* faults into hole wait for punch to end */
 	pgoff_t start;		/* start of range currently being fallocated */
@@ -181,7 +179,7 @@ struct mbsfs_falloc {
 	pgoff_t nr_unswapped;	/* how often writepage refused to swap out */
 };
 
-
+#if 0
 static bool mbsFS_should_replace_page(struct page *page, gfp_t gfp);
 static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index);
@@ -343,7 +341,8 @@ static void mbsfs_recalc_inode(struct inode *inode)
 	struct mbsfs_inode_info *info = MBS_I(inode);
 	long freed;
 
-	freed = info->alloced - info->swapped - inode->i_mapping->nrpages;
+	//freed = info->alloced - info->swapped - inode->i_mapping->nrpages;
+	freed = info->alloced - inode->i_mapping->nrpages;
 	if (freed > 0) {
 		info->alloced -= freed;
 		inode->i_blocks -= freed * BLOCKS_PER_PAGE;
@@ -459,7 +458,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 int mbsFS_huge __read_mostly;
 #define mbsFS_huge MBS_HUGE_DENY
 
-static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
+static unsigned long mbsFS_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
@@ -1379,7 +1378,7 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	err = -ENOMEM;
 	err = -ENOSPC;
 	mbsfs_inode_unacct_blocks(inode, nr);
-failed:
+//failed:
 	return ERR_PTR(err);
 }
 #if 0
@@ -1482,9 +1481,9 @@ static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 {
 	struct address_space *mapping = inode->i_mapping;
 	struct mbsfs_inode_info *info = MBS_I(inode);
-	struct mbsFS_sb_info *sbinfo;
+	struct mbsfs_sb_info *sbinfo;
 	struct mm_struct *charge_mm;
-	struct mem_cgroup *memcg;
+	//struct mem_cgroup *memcg;
 	struct page *page;
 	swp_entry_t swap;
 	enum mbs_type mbstype_huge = mbstype;
@@ -2382,7 +2381,7 @@ mbsfs_write_begin(struct file *file, struct address_space *mapping,
 		struct page **pagep, void **fsdata)
 {
 	struct inode *inode = mapping->host;
-	struct mbsfs_inode_info *info = MBS_I(inode);
+	//struct mbsfs_inode_info *info = MBS_I(inode);
 	pgoff_t index = pos >> PAGE_SHIFT;
 
 	/* i_mutex is held by caller */
