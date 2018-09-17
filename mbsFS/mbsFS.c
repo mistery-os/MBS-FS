@@ -3602,7 +3602,7 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 		bool remount)
 {
 	char *this_char, *value, *rest;
-	//struct mempolicy *mpol = NULL;
+	struct mempolicy *mpol = NULL;
 	uid_t uid;
 	gid_t gid;
 #if 0
@@ -3691,22 +3691,19 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 			if (!gid_valid(sbinfo->gid))
 				goto bad_val;
 #ifdef CONFIG_NUMA
-#if 0
 		} else if (!strcmp(this_char,"flag")) {
-			//mpol_put(mpol);
 			mpol_put_pram(mpol);
 			mpol = NULL;
 			if (mpol_parse_str(value, &mpol))
 				if (mpol_parse_str_pram(value, &mpol))
 					goto bad_val;
 #endif
-#endif
 		} else {
 			pr_err("mbsfs: Bad mount option %s\n", this_char);
 			goto error;
 		}
 	}
-	//	sbinfo->mpol = mpol;
+	sbinfo->mpol = mpol;
 	return 0;
 
 bad_val:
@@ -3922,14 +3919,11 @@ err_name:
 
 static void mbsfs_put_super(struct super_block *sb)
 {
-	//#if 0							//rNO
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
 
 	percpu_counter_destroy(&sbinfo->used_blocks);
 	////mpol_put(sbinfo->mpol);
-	//mpol_put_pram(sbinfo->mpol);
-	//#endif
-	//kfree(sb->s_fs_info); //-->do at the mbsfs_kill_sb
+	mpol_put_pram(sbinfo->mpol);
 	kfree(sbinfo);
 	sb->s_fs_info = NULL;
 }
@@ -3952,13 +3946,14 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
 	/* simple-mbsfs
-	//fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
-	//sb->s_fs_info = fsi;
-	//if (!fsi)
-	//	return -ENOMEM;
-	//err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
-	//if (err)
-	//	return err;
+	fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
+	sb->s_fs_info = fsi;
+	if (!fsi)
+		return -ENOMEM;
+	err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
+	if (err)
+		return err;
+	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
 	*/
 	/*
 	 * Per default we allow the physical pram per
@@ -3998,7 +3993,6 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_flags |= MS_POSIXACL;
 #endif
 	uuid_gen(&sb->s_uuid);					//rNO
-	//inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
 	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | sbinfo->mode, 0, VM_NONE);
 	if (!inode)
 		goto failed;
@@ -4154,14 +4148,14 @@ static const struct inode_operations mbsfs_special_inode_operations = {
 
 
 static const struct super_operations mbsfs_ops = {
-	//.alloc_inode	= mbsFS_alloc_inode,			//rNO
-	//.destroy_inode	= mbsFS_destroy_inode,		//rNO
 	.statfs		= mbsfs_statfs,
 	.drop_inode	= generic_delete_inode,
-	//.remount_fs	= mbsFS_remount_fs,			//rNO
 	.show_options	= mbsfs_show_options,
-	//.evict_inode	= mbsFS_evict_inode,			//rNO
 	.put_super	= mbsfs_put_super,			//rNO
+	//.remount_fs	= mbsFS_remount_fs,			//rNO
+	//.alloc_inode	= mbsFS_alloc_inode,			//rNO
+	//.destroy_inode	= mbsFS_destroy_inode,		//rNO
+	//.evict_inode	= mbsFS_evict_inode,			//rNO
 };
 
 #if 0
@@ -4199,7 +4193,7 @@ static void mbsfs_kill_sb(struct super_block *sb)
 	if (sb->s_root)
 		d_genocide(sb->s_root);
 	kill_anon_super(sb);
-	pr_debug("mbsFS_kill_sb successfully finished\n");
+	pr_debug("mbsfs_kill_sb successfully finished\n");
 }
 static struct file_system_type mbsfs_fs_type = {
 	.owner		= THIS_MODULE,

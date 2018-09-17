@@ -39,10 +39,8 @@ struct mbsfs_inode_info {
 	//unsigned long		swapped;	/* subtotal assigned to swap */
 	//struct list_head      shrinklist;     /* shrinkable hpage inodes */
 	//struct list_head	swaplist;	/* chain of maybes on swap */
-	union{
-		struct shared_policy	shmem;		/* NUSA memory alloc policy */
-		struct mbsfs_policy	mbsfs;		/* NUSA memory alloc policy */
-	} policy; 
+	//struct shared_policy	policy;		/* NUSA memory alloc policy */
+	struct mbsfs_policy	policy;		/* NUSA memory alloc policy */
 	struct simple_xattrs	xattrs;		/* list of xattrs */
 	struct inode		vfs_inode;
 };
