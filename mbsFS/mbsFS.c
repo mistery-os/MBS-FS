@@ -156,7 +156,7 @@ static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
 unsigned long totalpram_pages;
-static unsigned long mbsFS_default_max_blocks(void)
+static unsigned long mbsfs_default_max_blocks(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 	//totalpram_pages=totalram_pages;
@@ -164,7 +164,7 @@ static unsigned long mbsFS_default_max_blocks(void)
 	return totalpram_pages / 2;
 }
 
-static unsigned long mbsFS_default_max_inodes(void)
+static unsigned long mbsfs_default_max_inodes(void)
 {
 	totalpram_pages=memblock.pram.total_size / PAGE_SIZE;//convert to pages
 //	totalpram_pages=totalram_pages;
@@ -2029,7 +2029,7 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 {
 	struct inode * inode = new_inode(sb);
 	struct mbsfs_inode_info *info;
-	//struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
+	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
 
 	//if (mbsfs_reserve_inode(sb)) //rNO
 	//	return NULL;
@@ -2043,7 +2043,6 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 		inode->i_atime = inode->i_mtime = inode->i_ctime = current_time(inode);
 		inode->i_blocks = 0;
 		inode->i_generation = get_seconds();//rNO
-		//inode->i_mapping->a_ops = &mbsFS_aops;
 		info = MBS_I(inode);
 		memset(info, 0, (char *)inode - (char *)info);
 		//spin_lock_init(&info->lock);			/rNO
@@ -3599,35 +3598,12 @@ static int mbsfs_parse_options(char *data, struct mbsfs_mount_opts *opts)
 }
 #endif
 static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
-		bool remount, struct mbsfs_mount_opts *opts)
+		bool remount)
 {
-	substring_t args[MAX_OPT_ARGS];
-	int option;
-	int token;
-	char *p;
-
-	opts->mode = MBSFS_DEFAULT_MODE;
-
-	while ((p = strsep(&options, ",")) != NULL) {
-		if (!*p)
-			continue;
-
-		token = match_token(p, tokens, args);
-		switch (token) {
-			case Opt_mode:
-				if (match_octal(&args[0], &option))
-					return -EINVAL;
-				opts->mode = option & S_IALLUGO;
-				break;
-				/*
-				 * We might like to report bad mount options here;
-				 * but traditionally ramfs has ignored all mount options,
-				 * and as it is used as a !CONFIG_SHMEM simple substitute
-				 * for tmpfs, better continue to ignore other mount options.
-				 */
-		}
-	}
-	return 0;
+	char *this_char, *value, *rest;
+	//struct mempolicy *mpol = NULL;
+	uid_t uid;
+	gid_t gid;
 #if 0
 	static struct mempolicy pram_policy = {
 		.refcnt = ATOMIC_INIT(1), /* never free it */
@@ -3636,12 +3612,9 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 	};
 	//struct mempolicy *mpol = &default_pram_policy;
 	struct mempolicy *mpol = &pram_policy;
-//#endif
-	char *this_char, *value, *rest;
-	//struct mempolicy *mpol = NULL;
-	uid_t uid;
-	gid_t gid;
+#endif
 
+	sbinfo->mode = MBSFS_DEFAULT_MODE; //choose simple or comple, now simple
 	while (options != NULL) {
 		this_char = options;
 		for (;;) {
@@ -3717,29 +3690,59 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 			if (!gid_valid(sbinfo->gid))
 				goto bad_val;
 #ifdef CONFIG_NUMA
+#if 0
 		} else if (!strcmp(this_char,"flag")) {
 			//mpol_put(mpol);
 			mpol_put_pram(mpol);
 			mpol = NULL;
-			//if (mpol_parse_str(value, &mpol))
+			if (mpol_parse_str(value, &mpol))
 			if (mpol_parse_str_pram(value, &mpol))
 				goto bad_val;
+#endif
 #endif
 		} else {
 			pr_err("mbsfs: Bad mount option %s\n", this_char);
 			goto error;
 		}
 	}
-	sbinfo->mpol = mpol;
+//	sbinfo->mpol = mpol;
 	return 0;
 
 bad_val:
 	pr_err("mbsfs: Bad value '%s' for mount option '%s'\n",
 			value, this_char);
 error:
-	mpol_put(mpol);
+	//mpol_put(mpol);
 	//mpol_put_pram(mpol);
 	return 1;
+
+#if 0 //simple-mbs-fs
+	substring_t args[MAX_OPT_ARGS];
+	int option;
+	int token;
+	char *p;
+
+
+	while ((p = strsep(&options, ",")) != NULL) {
+		if (!*p)
+			continue;
+
+		token = match_token(p, tokens, args);
+		switch (token) {
+			case Opt_mode:
+				if (match_octal(&args[0], &option))
+					return -EINVAL;
+				opts->mode = option & S_IALLUGO;
+				break;
+				/*
+				 * We might like to report bad mount options here;
+				 * but traditionally ramfs has ignored all mount options,
+				 * and as it is used as a !CONFIG_SHMEM simple substitute
+				 * for tmpfs, better continue to ignore other mount options.
+				 */
+		}
+	}
+	return 0;
 #endif
 }
 #if 0
@@ -3798,10 +3801,10 @@ static int mbsfs_show_options(struct seq_file *seq, struct dentry *root)
 	if (fsi->mount_opts.mode != MBSFS_DEFAULT_MODE)
 		seq_printf(seq, ",mode=%o", fsi->mount_opts.mode);
 
-	if (sbinfo->max_blocks != mbsFS_default_max_blocks())
+	if (sbinfo->max_blocks != mbsfs_default_max_blocks())
 		seq_printf(seq, ",size=%luk",
 				sbinfo->max_blocks << (PAGE_SHIFT - 10));
-	if (sbinfo->max_inodes != mbsFS_default_max_inodes())
+	if (sbinfo->max_inodes != mbsfs_default_max_inodes())
 		seq_printf(seq, ",nr_inodes=%lu", sbinfo->max_inodes);
 	if (sbinfo->mode != (S_IRWXUGO | S_ISVTX))
 		seq_printf(seq, ",mode=%03ho", sbinfo->mode);
@@ -3932,42 +3935,14 @@ static void mbsfs_put_super(struct super_block *sb)
 
 int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 {
-	struct mbsfs_fs_info *fsi;
+	//struct mbsfs_fs_info *fsi;
 	struct inode *inode;
 	struct mbsfs_sb_info *sbinfo;			//rNO
-	int err;
-
-	fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
-	sb->s_fs_info = fsi;
-	if (!fsi)
-		return -ENOMEM;
-
-	err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
-	if (err)
-		return err;
-
-	sb->s_maxbytes		= MAX_LFS_FILESIZE;
-	sb->s_blocksize		= PAGE_SIZE;
-	sb->s_blocksize_bits	= PAGE_SHIFT;
-	sb->s_magic		= MBSFS_MAGIC;
-	sb->s_op		= &mbsfs_ops;
-	sb->s_time_gran		= 1;
-
-	uuid_gen(&sb->s_uuid);					//rNO
-	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,0);
-	sb->s_root = d_make_root(inode);
-	if (!sb->s_root)
-		return -ENOMEM;
-
-	return 0;
-#if 0
-	struct mbsFS_sb_info *sbinfo;
-	struct inode *inode;
 	int err = -ENOMEM;
 
 	/* Round up to L1_CACHE_BYTES to resist false sharing */
-	sbinfo = kzalloc(max((int)sizeof(struct mbsFS_sb_info),
-				L1_CACHE_BYTES), GFP_KERNEL);
+	sbinfo = kzalloc(max((int)sizeof(struct mbsfs_sb_info), L1_CACHE_BYTES),
+		       	GFP_KERNEL);
 	if (!sbinfo)
 		return -ENOMEM;
 
@@ -3975,37 +3950,65 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->uid = current_fsuid();
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
+/* simple-mbsfs
+	//fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
+	//sb->s_fs_info = fsi;
+	//if (!fsi)
+	//	return -ENOMEM;
+	//err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
+	//if (err)
+	//	return err;
+*/
 	/*
 	 * Per default we allow the physical pram per
 	 * mbsfs instance, limiting inodes to one per page of lowmem;
 	 * but the internal instance is left unlimited.
 	 */
 	if (!(sb->s_flags & MS_KERNMOUNT)) {
-		sbinfo->max_blocks = mbsFS_default_max_blocks();
-		sbinfo->max_inodes = mbsFS_default_max_inodes();
-		if (mbsFS_parse_options(data, sbinfo, false)) {
+		sbinfo->max_blocks = mbsfs_default_max_blocks();
+		sbinfo->max_inodes = mbsfs_default_max_inodes();
+		if (mbsfs_parse_options(data, sbinfo, false)) {
 			err = -EINVAL;
 			goto failed;
 		}
 	}else{
 		sb->s_flags |= MS_NOUSER;
 	}
-	sb->s_export_op = &mbsFS_export_ops;
+	//sb->s_export_op = &mbsFS_export_ops;		//nfs related
 	sb->s_flags |= MS_NOSEC;
 
 	spin_lock_init(&sbinfo->stat_lock);
 	if (percpu_counter_init(&sbinfo->used_blocks, 0, GFP_KERNEL))
 		goto failed;
 	sbinfo->free_inodes = sbinfo->max_inodes;
-	spin_lock_init(&sbinfo->shrinklist_lock);
-	INIT_LIST_HEAD(&sbinfo->shrinklist);
+//	spin_lock_init(&sbinfo->shrinklist_lock);
+//	INIT_LIST_HEAD(&sbinfo->shrinklist);
 
-	sb->s_maxbytes = MAX_LFS_FILESIZE;
-	sb->s_blocksize = PAGE_SIZE;
-	sb->s_blocksize_bits = PAGE_SHIFT;
-	sb->s_magic = MBSFS_MAGIC;
-	sb->s_op = &mbsFS_ops;
-	sb->s_time_gran = 1;
+	sb->s_maxbytes		= MAX_LFS_FILESIZE;
+	sb->s_blocksize		= PAGE_SIZE;
+	sb->s_blocksize_bits	= PAGE_SHIFT;
+	sb->s_magic		= MBSFS_MAGIC;
+	sb->s_op		= &mbsfs_ops;
+	sb->s_time_gran		= 1;
+#ifdef CONFIG_MBSFS_XATTR
+	sb->s_xattr = mbsfs_xattr_handlers;
+#endif
+#ifdef CONFIG_MBSFS_POSIX_ACL
+	sb->s_flags |= MS_POSIXACL;
+#endif
+	uuid_gen(&sb->s_uuid);					//rNO
+	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
+	sb->s_root = d_make_root(inode);
+	if (!sb->s_root)
+		goto failed;
+		//return -ENOMEM;
+	return 0;
+failed:
+	mbsfs_put_super(sb);
+	return err;
+
+#if 0
+
 #ifdef CONFIG_MBSFS_XATTR
 	sb->s_xattr = mbsFS_xattr_handlers;
 #endif
@@ -4024,9 +4027,6 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 		goto failed;
 	return 0;
 
-failed:
-	mbsFS_put_super(sb);
-	return err;
 #endif
 }
 
