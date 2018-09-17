@@ -4058,7 +4058,7 @@ static void mbsFS_destroy_inode(struct inode *inode)
 #endif
 static void mbsFS_init_inode(void *foo)
 {
-	struct mbsFS_inode_info *info = foo;
+	struct mbsfs_inode_info *info = foo;
 	inode_init_once(&info->vfs_inode);
 }
 
@@ -4066,7 +4066,7 @@ static int mbsfs_init_inodecache(void)
 {
 	mbsfs_inode_cachep = kmem_cache_create("mbsFS_inode_cache",
 			sizeof(struct mbsFS_inode_info),
-			0, SLAB_PANIC|SLAB_ACCOUNT, mbsFS_init_inode);
+			0, SLAB_PANIC|SLAB_ACCOUNT, mbsfs_init_inode);
 	return 0;
 }
 
@@ -4076,7 +4076,7 @@ static void mbsfs_destroy_inodecache(void)
 }
 
 static const struct address_space_operations mbsfs_aops = {
-	//	.writepage	= mbsFS_writepage,
+	//.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
@@ -4155,7 +4155,7 @@ static const struct super_operations mbsfs_ops = {
 	//.remount_fs	= mbsFS_remount_fs,			//rNO
 	.show_options	= mbsfs_show_options,
 	//.evict_inode	= mbsFS_evict_inode,			//rNO
-	.put_super	= mbsFS_put_super,			//rNO
+	.put_super	= mbsfs_put_super,			//rNO
 };
 
 #if 0

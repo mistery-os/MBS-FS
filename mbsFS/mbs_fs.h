@@ -14,7 +14,7 @@ struct mbsfs_mount_opts {
 };
 
 struct mbmfs_fs_info {
-	struct ramfs_mount_opts mount_opts;
+	struct mbsfs_mount_opts mount_opts;
 };
 
 enum {
@@ -40,9 +40,9 @@ struct mbsfs_inode_info {
 	//struct list_head      shrinklist;     /* shrinkable hpage inodes */
 	//struct list_head	swaplist;	/* chain of maybes on swap */
 	union{
-	struct shared_policy	policy;		/* NUSA memory alloc policy */
-	struct mbsfs_policy	policy;		/* NUSA memory alloc policy */
-	}; 
+		struct shared_policy	shmem;		/* NUSA memory alloc policy */
+		struct mbsfs_policy	mbsfs;		/* NUSA memory alloc policy */
+	} policy; 
 	struct simple_xattrs	xattrs;		/* list of xattrs */
 	struct inode		vfs_inode;
 };
@@ -76,7 +76,7 @@ static inline struct mbsfs_sb_info *MBS_SB(struct super_block *sb)
 //extern int mbsFS_init(void);
 //extern int mbsFS_fill_super(struct super_block *sb, void *data, int silent);
 extern struct file *mbsFS_file_setup(const char *name,
-					loff_t size, unsigned long flags);
+		loff_t size, unsigned long flags);
 //extern struct file *mbsFS_kernel_file_setup(const char *name, loff_t size,
 //					    unsigned long flags);
 //extern int mbsFS_zero_setup(struct vm_area_struct *);
@@ -116,10 +116,10 @@ extern int mbsFS_getpage(struct inode *inode, pgoff_t index,
 		struct page **pagep, enum mbs_type sgp);
 
 static inline struct page *mbsFS_read_mapping_page(
-				struct address_space *mapping, pgoff_t index)
+		struct address_space *mapping, pgoff_t index)
 {
 	return mbsFS_read_mapping_page_gfp(mapping, index,
-					mapping_gfp_mask(mapping));
+			mapping_gfp_mask(mapping));
 }
 
 static inline bool mbsFS_file(struct file *file)
@@ -158,19 +158,19 @@ static inline bool mbsFS_huge_enabled(struct vm_area_struct *vma)
 
 //#ifdef CONFIG_MBS
 extern int mbsFS_mcopy_atomic_pte(struct mm_struct *dst_mm, pmd_t *dst_pmd,
-				  struct vm_area_struct *dst_vma,
-				  unsigned long dst_addr,
-				  unsigned long src_addr,
-				  struct page **pagep);
+		struct vm_area_struct *dst_vma,
+		unsigned long dst_addr,
+		unsigned long src_addr,
+		struct page **pagep);
 extern int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
-				    pmd_t *dst_pmd,
-				    struct vm_area_struct *dst_vma,
-				    unsigned long dst_addr);
+		pmd_t *dst_pmd,
+		struct vm_area_struct *dst_vma,
+		unsigned long dst_addr);
 // #else
- #define mbsFS_mcopy_atomic_pte(dst_mm, dst_pte, dst_vma, dst_addr, \
-			       src_addr, pagep)        ({ BUG(); 0; })
- #define mbsFS_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
-				 dst_addr)      ({ BUG(); 0; })
+#define mbsFS_mcopy_atomic_pte(dst_mm, dst_pte, dst_vma, dst_addr, \
+		src_addr, pagep)        ({ BUG(); 0; })
+#define mbsFS_mfill_zeropage_pte(dst_mm, dst_pmd, dst_vma, \
+		dst_addr)      ({ BUG(); 0; })
 // #endif
 #endif
 //<<<2018.06.25 Yongseob
