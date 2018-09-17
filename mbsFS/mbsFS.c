@@ -1242,7 +1242,7 @@ redirty:
 	return 0;
 }
 #endif
-static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
+static void mbsfs_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
 
@@ -3810,9 +3810,7 @@ static int mbsfs_show_options(struct seq_file *seq, struct dentry *root)
 	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
 		seq_printf(seq, ",gid=%u",
 				from_kgid_munged(&init_user_ns, sbinfo->gid));
-#if 0
-	mbsFS_show_mpol(seq, sbinfo->mpol);
-#endif
+	mbsfs_show_mpol(seq, sbinfo->mpol);
 	return 0;
 }
 
