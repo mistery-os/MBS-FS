@@ -2031,8 +2031,8 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 	struct mbsfs_inode_info *info;
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
 
-	//if (mbsfs_reserve_inode(sb)) //rNO
-	//	return NULL;
+	if (mbsfs_reserve_inode(sb)) //rNO
+		return NULL;
 
 	if (inode) {
 		inode->i_ino = get_next_ino();
@@ -3997,15 +3997,20 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_flags |= MS_POSIXACL;
 #endif
 	uuid_gen(&sb->s_uuid);					//rNO
-	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
+	//inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
+	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | sbinfo->mode, 0, VM_NONE);
+	if (!inode)
+		goto failed;
+	inode->i_uid = sbinfo->uid;
+	inode->i_gid = sbinfo->gid;
 	sb->s_root = d_make_root(inode);
 	if (!sb->s_root)
 		goto failed;
-		//return -ENOMEM;
 	return 0;
 failed:
 	mbsfs_put_super(sb);
 	return err;
+	//return -ENOMEM;
 
 #if 0
 
