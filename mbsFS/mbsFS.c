@@ -3614,10 +3614,9 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 		//.flags = MPOL_F_LOCAL,
 	};
 	//struct mempolicy *mpol = &default_pram_policy;
-	struct mempolicy *mpol = &pram_policy;
 #endif
 
-	sbinfo->mode = MBSFS_DEFAULT_MODE; //choose simple or comple, now simple
+	//sbinfo->mode = MBSFS_DEFAULT_MODE; //choose simple or comple, now simple
 	while (options != NULL) {
 		this_char = options;
 		for (;;) {
@@ -3696,9 +3695,8 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 		} else if (!strcmp(this_char,"flag")) {
 			mpol_put_pram(mpol);
 			mpol = NULL;
-			if (mpol_parse_str(value, &mpol))
-				if (mpol_parse_str_pram(value, &mpol))
-					goto bad_val;
+			if (mpol_parse_str_pram(value, &mpol))
+				goto bad_val;
 #endif
 		} else {
 			pr_err("mbsfs: Bad mount option %s\n", this_char);
@@ -3707,13 +3705,11 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 	}
 	sbinfo->mpol = mpol;
 	return 0;
-
 bad_val:
 	pr_err("mbsfs: Bad value '%s' for mount option '%s'\n",
 			value, this_char);
 error:
-	//mpol_put(mpol);
-	//mpol_put_pram(mpol);
+	mpol_put_pram(mpol);
 	return 1;
 
 #if 0 //simple-mbs-fs
