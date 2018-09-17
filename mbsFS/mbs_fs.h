@@ -9,32 +9,50 @@
 #include <linux/percpu_counter.h>
 #include <linux/xattr.h>
 
-struct ramfs_mount_opts {
+struct mbsfs_mount_opts {
 	umode_t mode;
 };
 
-struct ramfs_fs_info {
+struct mbmfs_fs_info {
 	struct ramfs_mount_opts mount_opts;
 };
 
+enum {
+	Opt_mode,
+	Opt_err
+};
+
+static const match_table_t tokens = {
+	{Opt_mode, "mode=%o"},
+	{Opt_err, NULL}
+};
+
+#define MBSFS_DEFAULT_MODE	0755
 
 /* inode in-kernel data */
 
-struct mbsFS_inode_info {
+struct mbsfs_inode_info {
 	spinlock_t		lock;
 	unsigned int		seals;		/* mbsFS seals */
 	unsigned long		flags;
 	unsigned long		alloced;	/* data pages alloced to file */
-	unsigned long		swapped;	/* subtotal assigned to swap */
-	struct list_head        shrinklist;     /* shrinkable hpage inodes */
-	struct list_head	swaplist;	/* chain of maybes on swap */
-	//struct shared_policy	policy;		/* NUSA memory alloc policy */
+	//unsigned long		swapped;	/* subtotal assigned to swap */
+	//struct list_head      shrinklist;     /* shrinkable hpage inodes */
+	//struct list_head	swaplist;	/* chain of maybes on swap */
+	union{
+	struct shared_policy	policy;		/* NUSA memory alloc policy */
 	struct mbsfs_policy	policy;		/* NUSA memory alloc policy */
+	}; 
 	struct simple_xattrs	xattrs;		/* list of xattrs */
 	struct inode		vfs_inode;
 };
 
-struct mbsFS_sb_info {
+static inline struct mbsfs_inode_info *MBS_I(struct inode *inode)
+{
+	return container_of(inode, struct mbsfs_inode_info, vfs_inode);
+}
+
+struct mbsfs_sb_info {
 	unsigned long max_blocks;   /* How many blocks are allowed */
 	struct percpu_counter used_blocks;  /* How many are allocated */
 	unsigned long max_inodes;   /* How many inodes are allowed */
@@ -45,19 +63,16 @@ struct mbsFS_sb_info {
 	kuid_t uid;		    /* Mount uid for root directory */
 	kgid_t gid;		    /* Mount gid for root directory */
 	struct mempolicy *mpol;     /* default memory policy for mappings */
-	spinlock_t shrinklist_lock;   /* Protects shrinklist */
-	struct list_head shrinklist;  /* List of shinkable inodes */
-	unsigned long shrinklist_len; /* Length of shrinklist */
+	//spinlock_t shrinklist_lock;   /* Protects shrinklist */
+	//struct list_head shrinklist;  /* List of shinkable inodes */
+	//unsigned long shrinklist_len; /* Length of shrinklist */
 };
 
-static inline struct mbsFS_inode_info *MBS_I(struct inode *inode)
+static inline struct mbsfs_sb_info *MBS_SB(struct super_block *sb)
 {
-	return container_of(inode, struct mbsFS_inode_info, vfs_inode);
+	return sb->s_fs_info;
 }
 
-/*
- * Functions in mm/mbsFS.c called directly from elsewhere:
- */
 //extern int mbsFS_init(void);
 //extern int mbsFS_fill_super(struct super_block *sb, void *data, int silent);
 extern struct file *mbsFS_file_setup(const char *name,
@@ -119,13 +134,11 @@ static inline bool mbsFS_file(struct file *file)
 extern bool mbsFS_charge(struct inode *inode, long pages);
 extern void mbsFS_uncharge(struct inode *inode, long pages);
 
-//#ifdef CONFIG_TMPFS
 
 extern int mbsFS_add_seals(struct file *file, unsigned int seals);
 extern int mbsFS_get_seals(struct file *file);
 extern long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg);
 
-//#else
 
 static inline long mbsFS_fcntl(struct file *f, unsigned int c, unsigned long a)
 {
@@ -160,7 +173,6 @@ extern int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
 				 dst_addr)      ({ BUG(); 0; })
 // #endif
 #endif
-#endif
 //<<<2018.06.25 Yongseob
 #if 0
 extern void prep_transhuge_page(struct page *page);
@@ -185,4 +197,5 @@ extern void swap_shmem_alloc(swp_entry_t entry);
 extern void swap_mbs_alloc(swp_entry_t entry);
 extern int truncate_inode_page(struct address_space *mapping, struct page *page);
 extern void check_move_unevictable_pages(struct page **pages, int nr_pages);
+#endif
 #endif
