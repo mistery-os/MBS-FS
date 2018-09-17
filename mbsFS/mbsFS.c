@@ -2027,14 +2027,13 @@ static int mbsFS_mmap(struct file *file, struct vm_area_struct *vma)
 static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode *dir,
 		umode_t mode, dev_t dev, unsigned long flags)
 {
-	struct inode *inode;
+	struct inode * inode = new_inode(sb);
 	struct mbsfs_inode_info *info;
 	//struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
 
-	if (mbsfs_reserve_inode(sb)) //rNO
-		return NULL;
+	//if (mbsfs_reserve_inode(sb)) //rNO
+	//	return NULL;
 
-	inode = new_inode(sb);
 	if (inode) {
 		inode->i_ino = get_next_ino();
 		inode_init_owner(inode, dir, mode);
