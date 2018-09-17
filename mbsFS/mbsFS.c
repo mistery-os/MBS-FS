@@ -1338,7 +1338,7 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	struct page *page;
 
 	mbsfs_pseudo_vma_init(&pvma, info, index);
-	gfp = GFP_PRAM;
+	gfp |= GFP_PRAM;
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
 	page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
@@ -1361,14 +1361,15 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	if (1)
 		huge = false;
 	nr = huge ? HPAGE_PMD_NR : 1;
+#if 0
+	if (!mbsFS_inode_acct_block(inode, nr))
+		goto failed;
 
-	//if (!mbsFS_inode_acct_block(inode, nr))
-	//	goto failed;
-
-	//if (huge)
-	//	page = mbsFS_alloc_hugepage(gfp, info, index);
-	//else
-	page = mbsfs_alloc_page(gfp, info, index);
+	if (huge)
+		page = mbsFS_alloc_hugepage(gfp, info, index);
+	else
+#endif
+		page = mbsfs_alloc_page(gfp, info, index);
 	if (page) {
 		//__SetPageLocked(page);
 		//__SetPageSwapBacked(page);
@@ -1498,13 +1499,15 @@ static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 		mbstype = MBS_CACHE;
 repeat:
 	swap.val = 0;
-	page = find_lock_entry(mapping, index);
-	/*
-	   if (radix_tree_exceptional_entry(page)) {
-	   swap = radix_to_swp_entry(page);
+	//page = find_lock_entry(mapping, index);	//complex style
+	page = find_get_entry(mapping, offset);		//simple style
+	
+	if (radix_tree_exceptional_entry(page)) {
+	   //swap = radix_to_swp_entry(page);
 	   page = NULL;
-	   }
-	   */
+	   goto alloc_nohuge;
+	}
+	   
 	if (mbstype <= MBS_CACHE &&
 			((loff_t)index << PAGE_SHIFT) >= i_size_read(inode)) {
 		error = -EINVAL;
@@ -1652,6 +1655,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 		}
 //#if 0
 		if (IS_ERR(page)) {
+			return NULL;
 			int retry = 5;
 			error = PTR_ERR(page);
 			page = NULL;
