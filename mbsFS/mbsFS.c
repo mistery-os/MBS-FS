@@ -299,7 +299,7 @@ bool vma_is_mbsFS(struct vm_area_struct *vma)
 
 static LIST_HEAD(mbsFS_swaplist);
 static DEFINE_MUTEX(mbsFS_swaplist_mutex);
-#endif
+
 static int mbsfs_reserve_inode(struct super_block *sb)
 {
 	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
@@ -324,7 +324,7 @@ static void mbsfs_free_inode(struct super_block *sb)
 	}
 }
 
-#if 0
+
 /**
  * mbsFS_recalc_inode - recalculate the block usage of an inode
  * @inode: inode to recalc
@@ -970,7 +970,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 
 	simple_xattrs_free(&info->xattrs);
 	WARN_ON(inode->i_blocks);
-	mbsFS_free_inode(inode->i_sb);
+	mbsfs_free_inode(inode->i_sb);
 	clear_inode(inode);
 }
 
@@ -3599,7 +3599,7 @@ static int mbsfs_parse_options(char *data, struct mbsfs_mount_opts *opts)
 }
 #endif
 static int mbsfs_parse_options(char *options, struct mbsFS_sb_info *sbinfo,
-		bool remount, mbsfs_mount_opts *opts)
+		bool remount, struct mbsfs_mount_opts *opts)
 {
 	substring_t args[MAX_OPT_ARGS];
 	int option;
@@ -4056,7 +4056,7 @@ static void mbsFS_destroy_inode(struct inode *inode)
 	call_rcu(&inode->i_rcu, mbsFS_destroy_callback);
 }
 #endif
-static void mbsFS_init_inode(void *foo)
+static void mbsfs_init_inode(void *foo)
 {
 	struct mbsfs_inode_info *info = foo;
 	inode_init_once(&info->vfs_inode);
@@ -4065,7 +4065,7 @@ static void mbsFS_init_inode(void *foo)
 static int mbsfs_init_inodecache(void)
 {
 	mbsfs_inode_cachep = kmem_cache_create("mbsFS_inode_cache",
-			sizeof(struct mbsFS_inode_info),
+			sizeof(struct mbsfs_inode_info),
 			0, SLAB_PANIC|SLAB_ACCOUNT, mbsfs_init_inode);
 	return 0;
 }
