@@ -286,7 +286,7 @@ static const struct address_space_operations mbsfs_aops;
 static const struct file_operations mbsfs_file_operations;
 static const struct inode_operations mbsfs_inode_operations;
 static const struct inode_operations mbsfs_dir_inode_operations;
-//static const struct inode_operations mbsFS_special_inode_operations;
+static const struct inode_operations mbsfs_special_inode_operations;
 //static const struct vm_operations_struct mbsFS_vm_ops;
 static struct file_system_type mbsfs_fs_type;
 static int mbsfs_symlink(struct inode *dir, struct dentry *dentry, const char *symname);
@@ -1241,8 +1241,7 @@ redirty:
 	unlock_page(page);
 	return 0;
 }
-
-
+#endif
 static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
@@ -1256,7 +1255,7 @@ static void mbsFS_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 }
 
 
-static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
+static struct mempolicy *mbsfs_get_sbmpol(struct mbsfs_sb_info *sbinfo)
 {
 	struct mempolicy *mpol = NULL;
 	if (sbinfo->mpol) {
@@ -1267,7 +1266,7 @@ static struct mempolicy *mbsFS_get_sbmpol(struct mbsFS_sb_info *sbinfo)
 	}
 	return mpol;
 }
-
+#if 0
 static void mbsFS_pseudo_vma_init(struct vm_area_struct *vma,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -2036,21 +2035,21 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 	if (inode) {
 		inode->i_ino = get_next_ino();
 		inode_init_owner(inode, dir, mode);
-		inode->i_mapping->a_ops = &mbsfs_aops;
-		mapping_set_gfp_mask(inode->i_mapping, GFP_PRAM);
-		mapping_set_unevictable(inode->i_mapping);
-		inode->i_atime = inode->i_mtime = inode->i_ctime = current_time(inode);
 		inode->i_blocks = 0;
+		inode->i_atime = inode->i_mtime = inode->i_ctime = current_time(inode);
 		inode->i_generation = get_seconds();//rNO
 		info = MBS_I(inode);
 		memset(info, 0, (char *)inode - (char *)info);
-		spin_lock_init(&info->lock);			/rNO
-		//info->seals = F_SEAL_SEAL;			/rNO
-		info->flags = flags; // & VM_NORESERVE;	//rNO
+		spin_lock_init(&info->lock);			//rNO
+		info->flags = flags; // & VM_NONE;		//rNO
+		//info->seals = F_SEAL_SEAL;			//rNO
 		////INIT_LIST_HEAD(&info->shrinklist);		//rNO
 		////INIT_LIST_HEAD(&info->swaplist);		//rNO
 		//simple_xattrs_init(&info->xattrs);		//rNO
 		//cache_no_acl(inode);				//rNO
+		//inode->i_mapping->a_ops = &mbsfs_aops;
+		//mapping_set_gfp_mask(inode->i_mapping, GFP_PRAM);
+		mapping_set_unevictable(inode->i_mapping);
 
 		switch (mode & S_IFMT) {
 			default:
@@ -2058,8 +2057,11 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 				init_special_inode(inode, mode, dev);
 				break;
 			case S_IFREG:
+				inode->i_mapping->a_ops = &mbsfs_aops;
 				inode->i_op = &mbsfs_inode_operations;
 				inode->i_fop = &mbsfs_file_operations;
+				mpol_mbsfs_policy_init(&info->policy,
+						mbsfs_get_sbmpol(sbinfo));
 				break;
 			case S_IFDIR:
 				inc_nlink(inode); //rNO
@@ -3946,15 +3948,15 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sbinfo->gid = current_fsgid();
 	sb->s_fs_info = sbinfo;
 	/* simple-mbsfs
-	fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
-	sb->s_fs_info = fsi;
-	if (!fsi)
-		return -ENOMEM;
-	err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
-	if (err)
-		return err;
-	inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
-	*/
+	   fsi = kzalloc(sizeof(struct mbsfs_fs_info), GFP_KERNEL);
+	   sb->s_fs_info = fsi;
+	   if (!fsi)
+	   return -ENOMEM;
+	   err = mbsfs_parse_options(data, sbinfo, false, &fsi->mount_opts);
+	   if (err)
+	   return err;
+	   inode = mbsfs_get_inode(sb, NULL, S_IFDIR | fsi->mount_opts.mode, 0,VM_NONE);
+	   */
 	/*
 	 * Per default we allow the physical pram per
 	 * mbsfs instance, limiting inodes to one per page of lowmem;
