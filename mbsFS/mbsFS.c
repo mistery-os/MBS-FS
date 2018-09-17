@@ -350,7 +350,7 @@ static void mbsfs_recalc_inode(struct inode *inode)
 		mbsfs_inode_unacct_blocks(inode, freed);
 	}
 }
-
+#if 0
 bool mbsFS_charge(struct inode *inode, long pages)
 {
 	struct mbsfs_inode_info *info = MBS_I(inode);
@@ -382,6 +382,7 @@ void mbsFS_uncharge(struct inode *inode, long pages)
 
 	mbsfs_inode_unacct_blocks(inode, pages);
 }
+#endif
 /*
  * Replace item expected in radix tree by a new item, while holding tree lock.
  */
@@ -422,6 +423,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 	return item == swp_to_radix_entry(swap);
 }
 
+#endif
 /*
  * Definitions for "huge mbsfs": mbsfs mounted with the huge= option
  *
@@ -454,15 +456,14 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_DENY		(-1)
 #define MBS_HUGE_FORCE	(-2)
 
+int mbsFS_huge __read_mostly;
+#define mbsFS_huge MBS_HUGE_DENY
 
 static unsigned long mbsFS_unused_huge_shrink(struct mbsFS_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
 }
-#endif
-int mbsFS_huge __read_mostly;
-#define mbsFS_huge MBS_HUGE_DENY
 /*
  * Like add_to_page_cache_locked, but error if expected item has gone.
  */
@@ -1480,7 +1481,7 @@ static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 		struct vm_area_struct *vma, struct vm_fault *vmf, int *fault_type)
 {
 	struct address_space *mapping = inode->i_mapping;
-	struct mbsFS_inode_info *info = MBS_I(inode);
+	struct mbsfs_inode_info *info = MBS_I(inode);
 	struct mbsFS_sb_info *sbinfo;
 	struct mm_struct *charge_mm;
 	struct mem_cgroup *memcg;
@@ -1999,7 +2000,7 @@ static struct mempolicy *mbsfs_get_policy(struct vm_area_struct *vma,
 	index = ((addr - vma->vm_start) >> PAGE_SHIFT) + vma->vm_pgoff;
 	return mpol_mbsfs_policy_lookup(&MBS_I(inode)->policy, index);
 }
-
+#if 0
 int mbsFS_lock(struct file *file, int lock, struct user_struct *user)
 {
 	struct inode *inode = file_inode(file);
@@ -2024,6 +2025,7 @@ out_nomem:
 	spin_unlock_irq(&info->lock);
 	return retval;
 }
+#endif
 static int mbsfs_mmap(struct file *file, struct vm_area_struct *vma)
 {
 	file_accessed(file);
