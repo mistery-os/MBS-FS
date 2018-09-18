@@ -127,7 +127,7 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //				int page_size_log);
 
 #define MBSFS_MAGIC             0x20181231      //random number 
-#define ORDERS			10
+#define ORDERS			0
 #define is_file_hugepages(file)			false
 //####################
 //####################
