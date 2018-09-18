@@ -127,7 +127,7 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //				int page_size_log);
 
 #define MBSFS_MAGIC             0x20181231      //random number 
-
+#define ORDERS			10
 #define is_file_hugepages(file)			false
 //####################
 //####################
@@ -385,7 +385,7 @@ void mbsFS_uncharge(struct inode *inode, long pages)
 /*
  * Replace item expected in radix tree by a new item, while holding tree lock.
  */
-static int mbsFS_radix_tree_replace(struct address_space *mapping,
+static int mbsfs_radix_tree_replace(struct address_space *mapping,
 		pgoff_t index, void *expected, void *replacement)
 {
 	struct radix_tree_node *node;
@@ -509,7 +509,7 @@ static int mbsfs_add_to_page_cache(struct page *page,
 		if (!expected) {
 			error = radix_tree_insert(&mapping->page_tree, index, page);
 		} else {
-			error = mbsFS_radix_tree_replace(mapping, index, expected,
+			error = mbsfs_radix_tree_replace(mapping, index, expected,
 					page);
 		}
 
@@ -539,7 +539,7 @@ static void mbsFS_delete_from_page_cache(struct page *page, void *radswap)
 	VM_BUG_ON_PAGE(PageCompound(page), page);
 
 	spin_lock_irq(&mapping->tree_lock);
-	error = mbsFS_radix_tree_replace(mapping, page->index, page, radswap);
+	error = mbsfs_radix_tree_replace(mapping, page->index, page, radswap);
 	page->mapping = NULL;
 	mapping->nrpages--;
 	__dec_node_page_state(page, NR_FILE_PAGES);
@@ -1340,7 +1340,8 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	mbsfs_pseudo_vma_init(&pvma, info, index);
 	gfp |= GFP_PRAM;
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
-	page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
+	page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsfs_pseudo_vma_destroy(&pvma);
@@ -1435,7 +1436,7 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
 	 * a nice clean interface for us to replace oldpage by newpage there.
 	 */
 	spin_lock_irq(&swap_mapping->tree_lock);
-	error = mbsFS_radix_tree_replace(swap_mapping, swap_index, oldpage,
+	error = mbsfs_radix_tree_replace(swap_mapping, swap_index, oldpage,
 			newpage);
 	if (!error) {
 		__inc_node_page_state(newpage, NR_FILE_PAGES);
@@ -1475,7 +1476,6 @@ static int mbsFS_replace_page(struct page **pagep, gfp_t gfp,
  * fault_mm and fault_type are only supplied by mbsfs_fault:
  * otherwise they are NULL.
  */
-
 static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 		struct page **pagep, enum mbs_type mbstype, gfp_t gfp,
 		struct vm_area_struct *vma, struct vm_fault *vmf, int *fault_type)
@@ -1484,7 +1484,7 @@ static int mbsfs_getpage_gfp(struct inode *inode, pgoff_t index,
 	struct mbsfs_inode_info *info = MBS_I(inode);
 	struct mbsfs_sb_info *sbinfo;
 	struct mm_struct *charge_mm;
-	//struct mem_cgroup *memcg;
+	struct mem_cgroup *memcg;
 	struct page *page;
 	swp_entry_t swap;
 	enum mbs_type mbstype_huge = mbstype;
@@ -1503,7 +1503,7 @@ repeat:
 	page = find_get_entry(mapping, index);		//simple style
 	
 	if (radix_tree_exceptional_entry(page)) {
-	   //swap = radix_to_swp_entry(page);
+	   /* swap = radix_to_swp_entry(page); */
 	   page = NULL;
 	   goto alloc_nohuge;
 	}
@@ -1683,12 +1683,12 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 
 		if (mbstype == MBS_WRITE)
 			__SetPageReferenced(page);
-#if 0
+//#if 0
 		error = mem_cgroup_try_charge(page, charge_mm, gfp, &memcg,
 				PageTransHuge(page));
 		if (error)
 			goto unacct;
-#endif
+//#endif
 		error = radix_tree_maybe_preload_order(gfp & GFP_RECLAIM_MASK,
 				compound_order(page));
 		if (!error) {
@@ -1696,15 +1696,15 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					NULL);
 			radix_tree_preload_end();
 		}
-		//if (error) {
-		//	mem_cgroup_cancel_charge(page, memcg,
-		//			PageTransHuge(page));
+		if (error) {
+			mem_cgroup_cancel_charge(page, memcg,
+					PageTransHuge(page));
 			goto unacct;
-		//}
-#if 0
+		}
+//#if 0
 		mem_cgroup_commit_charge(page, memcg, false,
 				PageTransHuge(page));
-#endif
+//#endif
 		lru_cache_add_anon(page);	//	mm/swap.c
 
 		spin_lock_irq(&info->lock);
@@ -1787,7 +1787,7 @@ unacct:
 #endif
 failed:
 	//if (swap.val && !mbsFS_confirm_swap(mapping, index, swap))
-		error = -EEXIST;
+	//	error = -EEXIST;
 unlock:
 	if (page) {
 		unlock_page(page);
@@ -3948,6 +3948,8 @@ int mbsfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_maxbytes		= MAX_LFS_FILESIZE;
 	sb->s_blocksize		= PAGE_SIZE;
 	sb->s_blocksize_bits	= PAGE_SHIFT;
+	sb->s_blocksize		= PAGE_SIZE * (1UL << ORDERS);
+	sb->s_blocksize_bits	= PAGE_SHIFT + ORDERS ;
 	sb->s_magic		= MBSFS_MAGIC;
 	sb->s_op		= &mbsfs_ops;
 	sb->s_time_gran		= 1;
