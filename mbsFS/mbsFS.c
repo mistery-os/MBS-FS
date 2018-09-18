@@ -688,7 +688,7 @@ static void mbsfs_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 	unsigned int partial_end = (lend + 1) & (PAGE_SIZE - 1);
 	struct pagevec pvec;
 	pgoff_t indices[PAGEVEC_SIZE];
-	long nr_swaps_freed = 0;
+	//long nr_swaps_freed = 0;
 	pgoff_t index;
 	int i;
 
@@ -899,7 +899,7 @@ static int mbsfs_setattr(struct dentry *dentry, struct iattr *attr)
 {
 	struct inode *inode = d_inode(dentry);
 	struct mbsfs_inode_info *info = MBS_I(inode);
-	struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
+	//struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
 	int error;
 
 	error = setattr_prepare(dentry, attr);
@@ -1658,9 +1658,8 @@ alloc_huge:
 alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					index, false);
 		}
-//#if 0
+#if 0
 		if (IS_ERR(page)) {
-			return ENOSPC;
 			int retry = 5;
 			error = PTR_ERR(page);
 			page = NULL;
@@ -1683,7 +1682,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 		if (PageTransHuge(page))
 			hindex = round_down(index, HPAGE_PMD_NR);
 		else
-//#endif
+#endif
 			hindex = index;
 
 		if (mbstype == MBS_WRITE)
