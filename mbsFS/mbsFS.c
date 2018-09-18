@@ -151,7 +151,7 @@ hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 #endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
- * mbsFS_fallocate communicates with mbsfs_fault or mbsFS_writepage via
+ * mbsfs_fallocate communicates with mbsfs_fault or mbsFS_writepage via
  * inode->i_private (with i_mutex making sure that it has only one user at
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
@@ -1182,7 +1182,7 @@ static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 	 * not yet completed the fallocation, then (a) we want to keep track
 	 * of this page in case we have to undo it, and (b) it may not be a
 	 * good idea to continue anyway, once we're pushing into swap.  So
-	 * reactivate the page, and let mbsFS_fallocate() quit when too many.
+	 * reactivate the page, and let mbsfs_fallocate() quit when too many.
 	 */
 	if (!PageUptodate(page)) {
 		if (inode->i_private) {
@@ -1874,7 +1874,7 @@ static int mbsfs_fault(struct vm_fault *vmf)
 			schedule();
 
 			/*
-			 * mbsFS_falloc_waitq points into the mbsFS_fallocate()
+			 * mbsFS_falloc_waitq points into the mbsfs_fallocate()
 			 * stack of the hole-punching task: mbsFS_falloc_waitq
 			 * is usually invalid by the time we reach here, but
 			 * finish_wait() does not dereference it in that case;
@@ -1904,7 +1904,7 @@ static int mbsfs_fault(struct vm_fault *vmf)
 }
 #if 0
 #endif
-unsigned long mbsFS_get_unmapped_area(struct file *file,
+unsigned long mbsfs_get_unmapped_area(struct file *file,
 		unsigned long uaddr, unsigned long len,
 		unsigned long pgoff, unsigned long flags)
 {
@@ -2242,12 +2242,12 @@ int mbsFS_mfill_zeropage_pte(struct mm_struct *dst_mm,
 
 static const struct inode_operations mbsFS_symlink_inode_operations;
 static const struct inode_operations mbsFS_short_symlink_operations;
+#endif
 
 #ifdef CONFIG_MBSFS_XATTR
 static int mbsFS_initxattrs(struct inode *, const struct xattr *, void *);
 #else
 #define mbsFS_initxattrs NULL
-#endif
 #endif
 ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 {
@@ -2690,7 +2690,7 @@ static pgoff_t mbsfs_seek_hole_data(struct address_space *mapping,
 	return index;
 }
 
-static loff_t mbsFS_file_llseek(struct file *file, loff_t offset, int whence)
+static loff_t mbsfs_file_llseek(struct file *file, loff_t offset, int whence)
 {
 	struct address_space *mapping = file->f_mapping;
 	struct inode *inode = mapping->host;
@@ -2949,8 +2949,8 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-
-static long mbsFS_fallocate(struct file *file, int mode, loff_t offset,
+#endif
+static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
 	struct inode *inode = file_inode(file);
@@ -3081,7 +3081,7 @@ out:
 	inode_unlock(inode);
 	return error;
 }
-#endif
+
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
 	struct mbsfs_sb_info *sbinfo = MBS_SB(dentry->d_sb);
@@ -4052,7 +4052,7 @@ static const struct address_space_operations mbsfs_aops = {
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
-	//.readpage	= mbsfs_readpage,		//tNO
+	.readpage	= mbsfs_readpage,		//tNO
 #ifdef CONFIG_MIGRATION
 	.migratepage	= migrate_page,
 #endif
@@ -4061,15 +4061,15 @@ static const struct address_space_operations mbsfs_aops = {
 
 static const struct file_operations mbsfs_file_operations = {
 	.mmap		= mbsfs_mmap,
-	.get_unmapped_area = mbsFS_get_unmapped_area,
-	.llseek	=	mbsFS_file_llseek,
+	.get_unmapped_area = mbsfs_get_unmapped_area,
+	.llseek	=	mbsfs_file_llseek,
 	.read_iter	= mbsfs_file_read_iter,
 	.write_iter	= mbsfs_file_write_iter,
 	.fsync		= noop_fsync,
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.llseek		= generic_file_llseek,
-	//.fallocate	= mbsFS_fallocate,
+	.fallocate	= mbsfs_fallocate,
 	//.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
 };
 
