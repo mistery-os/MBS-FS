@@ -459,12 +459,13 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 
 int mbsFS_huge __read_mostly;
 #define mbsFS_huge MBS_HUGE_DENY
-
+#if 0
 static unsigned long mbsFS_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
 }
+#endif
 /*
  * Like add_to_page_cache_locked, but error if expected item has gone.
  */
@@ -1788,10 +1789,10 @@ unacct:
 		put_page(page);
 		goto alloc_nohuge;
 	}
-#endif
 failed:
-	//if (swap.val && !mbsFS_confirm_swap(mapping, index, swap))
-	//	error = -EEXIST;
+	if (swap.val && !mbsFS_confirm_swap(mapping, index, swap))
+		error = -EEXIST;
+#endif
 unlock:
 	if (page) {
 		unlock_page(page);
