@@ -195,7 +195,7 @@ int mbsfs_getpage(struct inode *inode, pgoff_t index,
 	return mbsfs_getpage_gfp(inode, index, pagep, mbstype,
 			mapping_gfp_mask(inode->i_mapping), NULL, NULL, NULL);
 }
-#if 0
+
 /*
  * mbsFS_file_setup pre-accounts the whole fixed size of a VM object,
  * for MBS memory and for MBS anonymous (/dev/zero) mappings
@@ -241,6 +241,7 @@ static inline int mbsFS_acct_block(unsigned long flags, long pages)
 	return security_vm_enough_memory_mm(current->mm,
 			pages * VM_ACCT(PAGE_SIZE));
 }
+#if 0
 #endif
 static inline void mbsfs_unacct_blocks(unsigned long flags, long pages)
 {
@@ -1298,6 +1299,7 @@ static struct page *mbsFS_swapin(swp_entry_t swap, gfp_t gfp,
 
 	return page;
 }
+#endif
 static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 		struct mbsFS_inode_info *info, pgoff_t index)
 {
@@ -1330,6 +1332,7 @@ static struct page *mbsFS_alloc_hugepage(gfp_t gfp,
 	//prep_transhuge_page(page);
 	return page;
 }
+#if 0
 #endif
 static struct page *mbsfs_alloc_page(gfp_t gfp,
 		struct mbsfs_inode_info *info, pgoff_t index)
@@ -1362,14 +1365,14 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	if (1)
 		huge = false;
 	nr = huge ? HPAGE_PMD_NR : 1;
-#if 0
+//#if 0
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
 	if (huge)
 		page = mbsFS_alloc_hugepage(gfp, info, index);
 	else
-#endif
+//#endif
 		page = mbsfs_alloc_page(gfp, info, index);
 	if (page) {
 		//__SetPageLocked(page);
@@ -2061,8 +2064,8 @@ static struct inode *mbsfs_get_inode(struct super_block *sb, const struct inode 
 		////INIT_LIST_HEAD(&info->swaplist);		//rNO
 		//simple_xattrs_init(&info->xattrs);		//rNO
 		//cache_no_acl(inode);				//rNO
-		//inode->i_mapping->a_ops = &mbsfs_aops;
-		//mapping_set_gfp_mask(inode->i_mapping, GFP_PRAM);
+		//inode->i_mapping->a_ops = &mbsfs_aops;	
+		//mapping_set_gfp_mask(inode->i_mapping, GFP_PRAM);//tNO
 		mapping_set_unevictable(inode->i_mapping);
 
 		switch (mode & S_IFMT) {
@@ -4069,10 +4072,10 @@ static const struct file_operations mbsfs_file_operations = {
 };
 
 static const struct inode_operations mbsfs_inode_operations = {
-	//.getattr	= mbsfs_getattr,
-	//.setattr	= mbsfs_setattr,
-	.getattr	= simple_getattr,		//tNO
-	.setattr	= simple_setattr,		//tNO
+	.getattr	= mbsfs_getattr,
+	.setattr	= mbsfs_setattr,
+	//.getattr	= simple_getattr,		//tNO
+	//.setattr	= simple_setattr,		//tNO
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
 	.set_acl	= simple_set_acl,
