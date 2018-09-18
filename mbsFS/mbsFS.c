@@ -872,7 +872,7 @@ static void mbsfs_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 	mbsfs_recalc_inode(inode);
 	spin_unlock_irq(&info->lock);
 }
-
+#if 0
 void mbsfs_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 {
 	mbsfs_undo_range(inode, lstart, lend, false);
@@ -949,6 +949,7 @@ static int mbsfs_setattr(struct dentry *dentry, struct iattr *attr)
 		error = posix_acl_chmod(inode, inode->i_mode);
 	return error;
 }
+#endif
 #if 0
 static void mbsFS_evict_inode(struct inode *inode)
 {
@@ -4074,10 +4075,10 @@ static const struct file_operations mbsfs_file_operations = {
 };
 
 static const struct inode_operations mbsfs_inode_operations = {
-	.getattr	= mbsfs_getattr,
-	.setattr	= mbsfs_setattr,
-	//.getattr	= simple_getattr,		//tNO
-	//.setattr	= simple_setattr,		//tNO
+	//.getattr	= mbsfs_getattr,
+	//.setattr	= mbsfs_setattr,
+	.getattr	= simple_getattr,		//tNO
+	.setattr	= simple_setattr,		//tNO
 #ifdef CONFIG_MBSFS_XATTR
 	.listxattr	= mbsFS_listxattr,
 	.set_acl	= simple_set_acl,
