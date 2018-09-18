@@ -2263,6 +2263,7 @@ ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	return ret;
 }
 //EXPORT_SYMBOL(mbsFS_file_write_iter);
+#if 0
 int mbsfs_readpage(struct file *file, struct page *page)
 {
 	clear_highpage(page);
@@ -2271,8 +2272,7 @@ int mbsfs_readpage(struct file *file, struct page *page)
 	unlock_page(page);
 	return 0;
 }
-#if 0
-	static inline struct page *
+static inline struct page *
 mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
 	VM_BUG_ON(nid < 0 || nid >= MAX_NUMNODES);
@@ -2949,7 +2949,6 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-#endif
 static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
@@ -3081,6 +3080,7 @@ out:
 	inode_unlock(inode);
 	return error;
 }
+#endif
 
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
@@ -4052,7 +4052,7 @@ static const struct address_space_operations mbsfs_aops = {
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
-	.readpage	= mbsfs_readpage,		//tNO
+	//.readpage	= mbsfs_readpage,		//tNO
 #ifdef CONFIG_MIGRATION
 	.migratepage	= migrate_page,
 #endif
@@ -4069,7 +4069,7 @@ static const struct file_operations mbsfs_file_operations = {
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.llseek		= generic_file_llseek,
-	.fallocate	= mbsfs_fallocate,
+	//.fallocate	= mbsfs_fallocate,
 	//.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
 };
 
