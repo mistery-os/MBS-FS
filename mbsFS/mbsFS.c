@@ -1355,7 +1355,7 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
 	page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS,
-		       	numa_node_id(), INTERLEAVE);
+		       	numa_node_id(), LOCAL);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsfs_pseudo_vma_destroy(&pvma);
