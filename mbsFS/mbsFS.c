@@ -979,7 +979,7 @@ static void mbsfs_evict_inode(struct inode *inode)
 #endif
 	}
 
-	simple_xattrs_free(&info->xattrs);
+	//simple_xattrs_free(&info->xattrs);
 	WARN_ON(inode->i_blocks);
 	mbsfs_free_inode(inode->i_sb);
 	clear_inode(inode);
