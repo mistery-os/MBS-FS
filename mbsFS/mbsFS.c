@@ -1,5 +1,5 @@
 /*
- * simple FS
+ * simple FS for Memory Bus connected Storage
  * Memory Bus-connected Storage File System
  * Copyright (C) 2018 Yongseob Lee
  *
@@ -31,19 +31,10 @@
 #include <linux/kernel.h>
 //#########################
 #include <linux/fs.h>
-#include <linux/pagemap.h>
-#include <linux/highmem.h>
-#include <linux/time.h>
-#include <linux/string.h>
-#include <linux/backing-dev.h>
-#include <linux/ramfs.h>
-#include <linux/sched.h>
-#include <linux/parser.h>
-#include <linux/magic.h>
-#include <linux/slab.h>
-#include <linux/uaccess.h>
 #include <linux/vfs.h>
 #include <linux/mount.h>
+#include <linux/ramfs.h>
+#include <linux/pagemap.h>
 #include <linux/file.h>
 #include <linux/mm.h>
 #include <linux/sched/signal.h>
@@ -52,8 +43,19 @@
 #include <linux/uio.h>
 #include <linux/khugepaged.h>
 //#include <linux/hugetlb.h>
+/***************************/
+#include <linux/highmem.h>
+#include <linux/time.h>
+#include <linux/string.h>
+#include <linux/backing-dev.h>
+#include <linux/sched.h>
+#include <linux/parser.h>
+#include <linux/magic.h>
+#include <linux/slab.h>
+#include <linux/uaccess.h>
 #include <linux/cpuset.h>
 #include <asm/tlbflush.h> /* for arch/microblaze update_mmu_cache() */
+/***************************/
 
 static struct vfsmount *mbsfs_mnt;
 
@@ -89,8 +91,10 @@ static struct vfsmount *mbsfs_mnt;
 #include <linux/memblock.h>
 #include "mbs_fs.h"
 #include "internal.h"
+#define MBSFS_MAGIC             0x20181231      //random number 
+#define ORDERS			0		//for accounting test
 
-#define BLOCKS_PER_PAGE  (PAGE_SIZE/512)
+#define BLOCKS_PER_PAGE  ( ( PAGE_SIZE << ORDERS )/512)
 #define VM_ACCT(size)    (PAGE_ALIGN(size) >> PAGE_SHIFT)
 
 /* Pretend that each entry is of this size in directory's i_size */
@@ -98,7 +102,7 @@ static struct vfsmount *mbsfs_mnt;
 
 /* Symlink up to this size is kmalloc'ed instead of using a swappable page */
 #define SHORT_SYMLINK_LEN 128
-
+/* below will be disappeared */
 #ifdef CONFIG_MBSFS_XATTR
 #undef CONFIG_MBSFS_XATTR
 #endif
@@ -108,6 +112,7 @@ static struct vfsmount *mbsfs_mnt;
 #ifdef CONFIG_MIGRATION
 #undef CONFIG_MIGRATION
 #endif
+/* above will be disappeared */
 //<<<2018.05.18 compile waring
 //extern s32 vm_committed_as_batch;
 //>>>
@@ -126,8 +131,6 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //				struct user_struct **user, int creat_flags,
 //				int page_size_log);
 
-#define MBSFS_MAGIC             0x20181231      //random number 
-#define ORDERS			0
 #define is_file_hugepages(file)			false
 //####################
 //####################
@@ -457,8 +460,8 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_DENY		(-1)
 #define MBS_HUGE_FORCE	(-2)
 
-int mbsFS_huge __read_mostly;
 #define mbsFS_huge MBS_HUGE_DENY
+int mbsFS_huge __read_mostly;
 #if 0
 static unsigned long mbsFS_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
@@ -520,8 +523,8 @@ static int mbsfs_add_to_page_cache(struct page *page,
 		mapping->nrpages += nr;
 		if (PageTransHuge(page))
 			__inc_node_page_state(page, NR_SHMEM_THPS);
-		__mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);
-		__mod_node_page_state(page_pgdat(page), NR_SHMEM, nr);
+		//__mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);
+		//__mod_node_page_state(page_pgdat(page), NR_SHMEM, nr);
 		spin_unlock_irq(&mapping->tree_lock);
 	} else {
 		page->mapping = NULL;
@@ -872,7 +875,6 @@ static void mbsfs_undo_range(struct inode *inode, loff_t lstart, loff_t lend,
 	mbsfs_recalc_inode(inode);
 	spin_unlock_irq(&info->lock);
 }
-#if 0
 void mbsfs_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 {
 	mbsfs_undo_range(inode, lstart, lend, false);
@@ -880,6 +882,7 @@ void mbsfs_truncate_range(struct inode *inode, loff_t lstart, loff_t lend)
 }
 //EXPORT_SYMBOL_GPL(mbsfs_truncate_range);
 
+#if 0
 static int mbsfs_getattr(const struct path *path, struct kstat *stat,
 		u32 request_mask, unsigned int query_flags)
 {
@@ -950,16 +953,16 @@ static int mbsfs_setattr(struct dentry *dentry, struct iattr *attr)
 	return error;
 }
 #endif
-#if 0
-static void mbsFS_evict_inode(struct inode *inode)
+static void mbsfs_evict_inode(struct inode *inode)
 {
 	struct mbsfs_inode_info *info = MBS_I(inode);
 	struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
 
 	if (inode->i_mapping->a_ops == &mbsfs_aops) {
-		mbsFS_unacct_size(info->flags, inode->i_size);
+		mbsfs_unacct_size(info->flags, inode->i_size);
 		inode->i_size = 0;
 		mbsfs_truncate_range(inode, 0, (loff_t)-1);
+#if 0
 		if (!list_empty(&info->shrinklist)) {
 			spin_lock(&sbinfo->shrinklist_lock);
 			if (!list_empty(&info->shrinklist)) {
@@ -973,6 +976,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 			list_del_init(&info->swaplist);
 			mutex_unlock(&mbsFS_swaplist_mutex);
 		}
+#endif
 	}
 
 	simple_xattrs_free(&info->xattrs);
@@ -980,6 +984,7 @@ static void mbsFS_evict_inode(struct inode *inode)
 	mbsfs_free_inode(inode->i_sb);
 	clear_inode(inode);
 }
+#if 0
 
 static unsigned long find_swap_entry(struct radix_tree_root *root, void *item)
 {
@@ -1024,7 +1029,7 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 
 	/*
 	 * Move _head_ to start search for next from here.
-	 * But be careful: mbsFS_evict_inode checks list_empty without taking
+	 * But be careful: mbsfs_evict_inode checks list_empty without taking
 	 * mutex, and there's an instant in list_move_tail when info->swaplist
 	 * would appear empty, if it were the only one on mbsFS_swaplist.
 	 */
@@ -1039,7 +1044,7 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 		/*
 		 * We needed to drop mutex to make that restrictive page
 		 * allocation, but the inode might have been freed while we
-		 * dropped it: although a racing mbsFS_evict_inode() cannot
+		 * dropped it: although a racing mbsfs_evict_inode() cannot
 		 * complete without emptying the radix_tree, our page lock
 		 * on this swapcache page is not enough to prevent that -
 		 * free_swap_and_cache() of our swap entry will only
@@ -1060,7 +1065,7 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 
 	/*
 	 * We rely on mbsFS_swaplist_mutex, not only to protect the swaplist,
-	 * but also to hold up mbsFS_evict_inode(): so inode cannot be freed
+	 * but also to hold up mbsfs_evict_inode(): so inode cannot be freed
 	 * beneath us (pagelock doesn't help until the page is in pagecache).
 	 */
 	if (!error)
@@ -1385,7 +1390,7 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	}
 
 	err = -ENOMEM;
-	err = -ENOSPC;
+//	err = -ENOSPC;
 	mbsfs_inode_unacct_blocks(inode, nr);
 failed:
 	return ERR_PTR(err);
@@ -4126,7 +4131,7 @@ static const struct super_operations mbsfs_ops = {
 	//.remount_fs	= mbsFS_remount_fs,			//rNO
 	.alloc_inode	= mbsfs_alloc_inode,			//rNO
 	.destroy_inode	= mbsfs_destroy_inode,			//rNO
-	//.evict_inode	= mbsFS_evict_inode,			//rNO
+	.evict_inode	= mbsfs_evict_inode,			//rNO
 };
 
 static const struct vm_operations_struct mbsfs_vm_ops = {
@@ -4263,7 +4268,7 @@ static struct file *__mbsFS_file_setup(const char *name, loff_t size,
 	return res;
 
 put_memory:
-	mbsFS_unacct_size(flags, size);
+	mbsfs_unacct_size(flags, size);
 put_path:
 	path_put(&path);
 	return res;
