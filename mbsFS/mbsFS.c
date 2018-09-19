@@ -457,7 +457,7 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
  *	enables huge on mbsfs_mnt and all mounts, w/o needing option, for testing;
  *
  */
-#define MBS_HUGE_DENY		(-1)
+#define MBS_HUGE_DENY	(-1)
 #define MBS_HUGE_FORCE	(-2)
 
 #define mbsFS_huge MBS_HUGE_DENY
@@ -956,7 +956,7 @@ static int mbsfs_setattr(struct dentry *dentry, struct iattr *attr)
 static void mbsfs_evict_inode(struct inode *inode)
 {
 	struct mbsfs_inode_info *info = MBS_I(inode);
-	struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
+	//struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
 
 	if (inode->i_mapping->a_ops == &mbsfs_aops) {
 		mbsfs_unacct_size(info->flags, inode->i_size);
