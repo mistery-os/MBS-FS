@@ -93,7 +93,8 @@ static struct vfsmount *mbsfs_mnt;
 #include "internal.h"
 #define MBSFS_MAGIC             0x20181231      //random number 
 #define ORDERS			0		//for accounting test
-
+#define INTERLEAVE	0
+#define LOCAL		1
 #define BLOCKS_PER_PAGE  ( ( PAGE_SIZE << ORDERS )/512)
 #define VM_ACCT(size)    (PAGE_ALIGN(size) >> PAGE_SHIFT)
 
@@ -1352,7 +1353,9 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	gfp |= GFP_PRAM;
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
-	page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
+	//page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
+	page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS,
+		       	numa_node_id(), INTERLEAVE);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsfs_pseudo_vma_destroy(&pvma);
