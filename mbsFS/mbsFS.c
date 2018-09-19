@@ -426,7 +426,6 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 	rcu_read_unlock();
 	return item == swp_to_radix_entry(swap);
 }
-
 #endif
 /*
  * Definitions for "huge mbsfs": mbsfs mounted with the huge= option
@@ -460,8 +459,8 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_DENY	(-1)
 #define MBS_HUGE_FORCE	(-2)
 
-#define mbsFS_huge MBS_HUGE_DENY
 int mbsFS_huge __read_mostly;
+#define mbsFS_huge MBS_HUGE_DENY
 #if 0
 static unsigned long mbsFS_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
