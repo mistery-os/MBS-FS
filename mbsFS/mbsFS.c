@@ -1354,8 +1354,8 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
-	page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS,
-		       	numa_node_id(), LOCAL);
+	//page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS, numa_node_id(), LOCAL);
+	page = alloc_prams_vma_pram_policy(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
 	//page = alloc_page_vma(gfp, &pvma, 0);
 	mbsfs_pseudo_vma_destroy(&pvma);
@@ -1392,7 +1392,7 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	}
 
 	err = -ENOMEM;
-//	err = -ENOSPC;
+	err = -ENOSPC;
 	mbsfs_inode_unacct_blocks(inode, nr);
 failed:
 	return ERR_PTR(err);
@@ -3133,7 +3133,7 @@ mbsfs_mknod(struct inode *dir, struct dentry *dentry, umode_t mode, dev_t dev)
 	return error;
 }
 #if 0
-	static int
+static int
 mbsFS_tmpfile(struct inode *dir, struct dentry *dentry, umode_t mode)
 {
 	struct inode *inode;
