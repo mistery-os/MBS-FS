@@ -476,6 +476,7 @@ static struct nova_inode *nova_init(struct super_block *sb,
 		cpu_to_le32(get_seconds());
 	root_i->nova_ino = cpu_to_le64(NOVA_ROOT_INO);
 	root_i->valid = 1;
+nova_info("nova_init: before nova_flush_buffer(root_i\n");
 	/* nova_sync_inode(root_i); */
 	nova_flush_buffer(root_i, sizeof(*root_i), false);
 	nova_memlock_inode(sb, root_i);
