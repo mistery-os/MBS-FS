@@ -41,6 +41,8 @@
 #include "journal.h"
 #include "super.h"
 #include "inode.h"
+#include <linux/memblock.h>
+extern struct memblock memblock;
 
 int measure_timing;
 int metadata_csum;
