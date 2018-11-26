@@ -96,6 +96,54 @@ static struct page *mbs_lookup_page(struct mbs_device *mbs, sector_t sector)
  * If one does not exist, allocate an empty page, and insert that. Then
  * return it.
  */
+static struct page *mbs_insert_pages(struct mbs_device *mbs, sector_t sector,int order)
+{
+	pgoff_t idx;
+	struct page *page;
+	gfp_t gfp_flags;
+
+	page = mbs_lookup_page(mbs, sector);
+	if (page)
+		return page;
+
+	/*
+	 * Must use NOIO because we don't want to recurse back into the
+	 * block or filesystem layers from page reclaim.
+	 *
+	 * Cannot support DAX and highmem, because our ->direct_access
+	 * routine for DAX must return memory that is always addressable.
+	 * If DAX was reworked to use pfns and kmap throughout, this
+	 * restriction might be able to be lifted.
+	 */
+	gfp_flags = GFP_NOIO | __GFP_ZERO;
+#ifndef CONFIG_BLK_DEV_PRAM_DAX
+	gfp_flags |= __GFP_HIGHMEM;
+#endif
+	//page = alloc_pram(gfp_flags|GFP_PRAM );
+	page = alloc_prams(GFP_PRAM,order);
+	if (!page)
+		return NULL;
+
+	if (radix_tree_preload(GFP_NOIO)) {
+		__free_page(page);
+		return NULL;
+	}
+
+	spin_lock(&mbs->mbs_lock);
+	idx = sector >> PAGE_SECTORS_SHIFT;
+	page->index = idx;
+	if (radix_tree_insert(&mbs->mbs_pages, idx, page)) {
+		__free_page(page);
+		page = radix_tree_lookup(&mbs->mbs_pages, idx);
+		BUG_ON(!page);
+		BUG_ON(page->index != idx);
+	}
+	spin_unlock(&mbs->mbs_lock);
+
+	radix_tree_preload_end();
+
+	return page;
+}
 static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 {
 	pgoff_t idx;
@@ -344,10 +392,11 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
 	struct page *page;
+	int order=9;
 
 	if (!mbs)
 		return -ENODEV;
-	page = mbs_insert_page(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT);
+	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
 		return -ENOSPC;
 	*kaddr = page_address(page);
@@ -389,11 +438,11 @@ static int mbs_nr = 1;
 module_param(mbs_nr, int, S_IRUGO);
 MODULE_PARM_DESC(mbs_nr, "Maximum number of mbs devices");
 
-//unsigned long rd_size = CONFIG_BLK_DEV_RAM_SIZE;
-unsigned long rd_size = 67108864;
-//unsigned long rd_size = memblock.pram.total_size/1024;
-module_param(rd_size, ulong, S_IRUGO);
-MODULE_PARM_DESC(rd_size, "Size of each RAM disk in kbytes.");
+//unsigned long mbs_size = CONFIG_BLK_DEV_RAM_SIZE;
+unsigned long mbs_size = 67108864;
+//unsigned long mbs_size = memblock.pram.total_size/1024;
+module_param(mbs_size, ulong, S_IRUGO);
+MODULE_PARM_DESC(mbs_size, "Size of each RAM disk in kbytes.");
 
 static int max_part = 1;
 module_param(max_part, int, S_IRUGO);
@@ -407,7 +456,7 @@ MODULE_ALIAS("rd");
 /* Legacy boot options - nonmodular */
 static int __init mbsdisk_size(char *str)
 {
-	rd_size = simple_strtol(str, NULL, 0);
+	mbs_size = simple_strtol(str, NULL, 0);
 	return 1;
 }
 __setup("mbsdisk_size=", mbsdisk_size);
@@ -425,7 +474,7 @@ static struct mbs_device *mbs_alloc(int i)
 	struct mbs_device *mbs;
 	struct gendisk *disk;
 
-	rd_size = memblock.pram.total_size/1024;//convert to kbytes
+	mbs_size = memblock.pram.total_size/1024;//convert to kbytes
 	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
 		goto out;
@@ -457,7 +506,7 @@ static struct mbs_device *mbs_alloc(int i)
 	disk->queue		= mbs->mbs_queue;
 	disk->flags		= GENHD_FL_EXT_DEVT;
 	sprintf(disk->disk_name, "mbs%d", i);
-	set_capacity(disk, rd_size * 2);
+	set_capacity(disk, mbs_size * 2);
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 	queue_flag_set_unlocked(QUEUE_FLAG_DAX, mbs->mbs_queue);
