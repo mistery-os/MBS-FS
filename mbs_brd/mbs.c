@@ -398,8 +398,8 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	if (!mbs)
 		return -ENODEV;
 	//page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
-	mbs_size = memblock.pram.total_size;//convert to kbytes
-	page = vmalloc(mbs_size);
+	mbs_size = memblock.pram.total_size;// bytes
+	page = vmalloc(mbs_size/2);
 	if (!page)
 		return -ENOSPC;
 	*kaddr = page_address(page);
