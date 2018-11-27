@@ -406,8 +406,11 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*pfn = page_to_pfn_t(page);
 #endif
 	vm = vmalloc(mbs_size/2);
-	*kaddr = page_address(vmalloc_to_page(vm));
-	*pfn = (pfn_t*)vmalloc_to_pfn(vm);
+	page=vmalloc_to_page(vm);
+	//*kaddr = page_address(vmalloc_to_page(vm));
+	//*pfn = (pfn_t)vmalloc_to_pfn(vm);
+	*kaddr = page_address(page);
+	*pfn = page_to_pfn_t(page);
 	mbs_size = memblock.pram.total_size;// bytes
 	return mbs_size/2;
 	return 1;
