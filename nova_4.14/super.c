@@ -143,7 +143,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 				 &virt_addr, &__pfn_t) * PAGE_SIZE;
 	//size = dax_direct_access(dax_dev, 0, LONG_MAX/PAGE_SIZE,
 	//		&virt_addr, &__pfn_t); //v 4.14.
-	size = memblock.pram.total_size;//bytes
+	//size = memblock.pram.total_size;//bytes
 	if (size <= 0) {
 		nova_err(sb, "direct_access failed\n");
 		return -EINVAL;

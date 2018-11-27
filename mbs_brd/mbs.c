@@ -405,6 +405,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 
+	return mbs_size/2;
 	return 1;
 }
 
