@@ -405,7 +405,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 #endif
-	vm = vmalloc(mbs_size/2);
+	vm = vmalloc(mbs_size/8);
 	page=vmalloc_to_page(vm);
 	//*kaddr = page_address(vmalloc_to_page(vm));
 	//*pfn = (pfn_t)vmalloc_to_pfn(vm);
