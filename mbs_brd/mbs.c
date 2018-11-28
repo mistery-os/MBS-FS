@@ -390,12 +390,12 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 }
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
+void *vmalloc_addr;
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
 	struct page *page;
 	//struct vm_struct *vm;
-	void *vmalloc_addr;
 	unsigned long mbs_size;
 
 	if (!mbs)
@@ -550,6 +550,8 @@ static void mbs_free(struct mbs_device *mbs)
 	put_disk(mbs->mbs_disk);
 	blk_cleanup_queue(mbs->mbs_queue);
 	mbs_free_pages(mbs);
+	if (vmalloc_addr != NULL)
+	vfree(vmalloc_addr);
 	kfree(mbs);
 }
 
