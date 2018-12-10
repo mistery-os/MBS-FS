@@ -401,6 +401,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	if (!mbs)
 		return -ENODEV;
 #if 0
+
 	int order=9;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
