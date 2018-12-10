@@ -411,7 +411,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 #endif
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
-	mbs_size = memblock.pram.total_size;// bytes
+	mbs_size = memblock.pram.total_size/4;// bytes
 	if (!vmalloc_addr )
 		vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
 	else 
