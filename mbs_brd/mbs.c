@@ -390,7 +390,7 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 }
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
-void *vmalloc_addr;
+void *vmalloc_addr=NULL;
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
@@ -408,13 +408,18 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 #endif
+	pr_info("caller function name is: %pf callee function name is:%s\n",
+		      	__builtin_return_address(0),__func__);
 	mbs_size = memblock.pram.total_size;// bytes
-	vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
+	if (!vmalloc_addr )
+		vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
+	else 
+		return 0;
 	page = vmalloc_to_page(vmalloc_addr);
 	//*kaddr = page_address(vmalloc_to_page(vmalloc_addr));
 	//*pfn = (vmalloc_to_pfn(vmalloc_addr));
-	*pfn = page_to_pfn_t(page);
 	*kaddr = page_address(page);
+	*pfn = page_to_pfn_t(page);
 	return mbs_size/PAGE_SIZE;
 	return 1;
 }
