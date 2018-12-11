@@ -425,8 +425,9 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 #endif
-	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
-	page=(struct page *)memremap_va;
+	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WT);
+	llpage=(struct page *)memremap_va;
+	page=virt_to_page(memremap_va);
 	*kaddr=memremap_va;
 	*pfn = page_to_pfn_t(page);
 
