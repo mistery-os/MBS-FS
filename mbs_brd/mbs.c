@@ -425,12 +425,12 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 #endif
-	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WT);
+	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
 	//page=(struct page *)memremap_va;
 	//page=pfn_to_page(mbs_base>>PAGE_SHIFT);
 	//*pfn = page_to_pfn_t(page);
 	*kaddr=memremap_va;
-	*pfn = phys_to_pfn_t(mbs_base,PFN_MAP);
+	*pfn = phys_to_pfn_t((phys_addr_t)mbs_base,PFN_MAP);
 
 	return mbs_size/PAGE_SIZE;
 	return 1;
