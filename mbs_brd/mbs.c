@@ -391,7 +391,7 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 void *vmalloc_addr=NULL;
-void *memremap_va=NULL
+void *memremap_va=NULL;
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
