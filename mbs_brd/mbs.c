@@ -23,6 +23,7 @@
 #include <linux/radix-tree.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
+#include <linux/io.h>
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 #include <linux/pfn_t.h>
 #include <linux/dax.h>
@@ -397,7 +398,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 {
 	struct page *page;
 	//struct vm_struct *vm;
-	unsigned long mbs_size;
+	unsigned long mbs_size=memblock.pram.regions[0].size;
 	unsigned long mbs_base=memblock.pram.regions[0].base;
 
 
@@ -414,6 +415,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 #endif
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
+#if 0
 	mbs_size = memblock.pram.total_size;// bytes
 	if (!vmalloc_addr )
 		vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
@@ -422,6 +424,12 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	//*pfn = (vmalloc_to_pfn(vmalloc_addr));
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
+#endif
+	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
+	page=(struct page *)memremap_va;
+	*kaddr=(unsigned long)memremap_va;
+	*pfn = page_to_pfn_t(page);
+
 	return mbs_size/PAGE_SIZE;
 	return 1;
 }
@@ -559,6 +567,8 @@ static void mbs_free(struct mbs_device *mbs)
 	mbs_free_pages(mbs);
 	if (vmalloc_addr != NULL)
 	vfree(vmalloc_addr);
+	if (memremap_va !=NULL)
+		memunmap(memremap_va);
 	kfree(mbs);
 }
 
