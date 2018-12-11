@@ -427,7 +427,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 #endif
 	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
 	page=(struct page *)memremap_va;
-	*kaddr=(unsigned long)memremap_va;
+	*kaddr=memremap_va;
 	*pfn = page_to_pfn_t(page);
 
 	return mbs_size/PAGE_SIZE;
