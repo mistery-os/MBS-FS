@@ -400,6 +400,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	//struct vm_struct *vm;
 	unsigned long mbs_size=memblock.pram.regions[0].size;
 	unsigned long mbs_base=memblock.pram.regions[0].base;
+	unsigned long total_size = memblock.pram.total_size;// bytes
 
 
 	if (!mbs)
@@ -432,6 +433,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*kaddr=memremap_va;
 	*pfn = phys_to_pfn_t((phys_addr_t)mbs_base,PFN_MAP);
 
+	return total_size/PAGE_SIZE;
 	return mbs_size/PAGE_SIZE;
 	return 1;
 }
