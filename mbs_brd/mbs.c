@@ -391,12 +391,15 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 void *vmalloc_addr=NULL;
+void *memremap_va=NULL
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
 	struct page *page;
 	//struct vm_struct *vm;
 	unsigned long mbs_size;
+	unsigned long mbs_base=memblock.pram.region[0].base;
+
 
 	if (!mbs)
 		return -ENODEV;
@@ -411,7 +414,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 #endif
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
-	mbs_size = memblock.pram.total_size/4;// bytes
+	mbs_size = memblock.pram.total_size;// bytes
 	if (!vmalloc_addr )
 		vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
 	page = vmalloc_to_page(vmalloc_addr);
