@@ -398,7 +398,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	struct page *page;
 	//struct vm_struct *vm;
 	unsigned long mbs_size;
-	unsigned long mbs_base=memblock.pram.region[0].base;
+	unsigned long mbs_base=memblock.pram.regions[0].base;
 
 
 	if (!mbs)
