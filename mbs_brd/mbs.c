@@ -443,6 +443,8 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	resource_size_t offset = PFN_PHYS(pgoff) + mbs->data_offset;
 	*kaddr = mbs->virt_addr + offset;
 	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flags);
+	unsigned long total_size = memblock.pram.total_size;// bytes
+	return total_size/PAGE_SIZE;
 	return PHYS_PFN(mbs->size - mbs->pfn_pad -offset);
 }
 
