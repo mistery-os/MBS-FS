@@ -103,7 +103,7 @@ static struct page *mbs_lookup_page(struct mbs_device *mbs, sector_t sector)
  * If one does not exist, allocate an empty page, and insert that. Then
  * return it.
  */
-#if 0
+//#if 0
 static struct page *mbs_insert_pages(struct mbs_device *mbs, sector_t sector,int order)
 {
 	pgoff_t idx;
@@ -152,7 +152,7 @@ static struct page *mbs_insert_pages(struct mbs_device *mbs, sector_t sector,int
 
 	return page;
 }
-#endif
+//#endif
 static struct page *mbs_insert_page(struct mbs_device *mbs, sector_t sector)
 {
 	pgoff_t idx;
@@ -404,16 +404,16 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 {
 	if (!mbs)
 		return -ENODEV;
-#if 0
+//#if 0
 	struct page *page;
-	int order=9;
+	int order=0;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
 		return -ENOSPC;
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 	return 1;
-#endif
+//#endif
 	//pr_info("caller function name is: %pf callee function name is:%s\n",
 	//	      	__builtin_return_address(0),__func__);
 #if 0
@@ -440,10 +440,13 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*pfn = phys_to_pfn_t((phys_addr_t)mbs_base,PFN_MAP);
 	return total_size/PAGE_SIZE;
 #endif
+#if 0
+	//NOVA not work as expected md-linear.. initialize only one mbs
 	resource_size_t offset = PFN_PHYS(pgoff) + mbs->data_offset;
 	*kaddr = mbs->virt_addr + offset;
 	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flags);
 	return PHYS_PFN(mbs->size - mbs->pfn_pad - offset);
+#endif
 }
 
 static long mbs_dax_direct_access(struct dax_device *dax_dev,
@@ -523,24 +526,28 @@ static struct mbs_device *mbs_alloc(int i)
 		goto out;
 	mbs->mbs_number		= i;
 	mbs->phys_addr = memblock.pram.regions[i].base;
-	//mbs_size = memblock.pram.total_size/1024;//convert to kbytes
 	//mbs->size = mbs_size = memblock.pram.regions[i].size / 1024;
 	//mbs->size = mbs_size = memblock.pram.total_size;//convert to kbytes
-	mbs->size = mbs_size = memblock.pram.regions[i].size;
+	//mbs->size = mbs_size = memblock.pram.regions[i].size;
+	mbs_size = memblock.pram.total_size;//bytes
 
 	spin_lock_init(&mbs->mbs_lock);
 	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC);
 
-	//mbs->mbs_queue = blk_alloc_queue(GFP_KERNEL);
-	mbs->mbs_queue = blk_alloc_queue_node(GFP_KERNEL, nid);
+	mbs->mbs_queue = blk_alloc_queue(GFP_KERNEL);
+	//mbs->mbs_queue = blk_alloc_queue_node(GFP_KERNEL, nid);
 	if (!mbs->mbs_queue)
 		goto out_free_dev;
+#ifdef MAPPERDAX_DIRECT
+	/*
 	mbs->pfn_flags = PFN_DEV;
 	addr = memremap(mbs->phys_addr, mbs->size, MEMREMAP_WB);
 	if (IS_ERR(addr))
 		goto out;
 		//return PTR_ERR(addr);
 	mbs->virt_addr = addr;
+	*/
+#endif
 
 	blk_queue_make_request(mbs->mbs_queue, mbs_make_request);
 	//blk_queue_max_hw_sectors(mbs->mbs_queue, 1024);
@@ -554,8 +561,8 @@ static struct mbs_device *mbs_alloc(int i)
 	 *  is harmless)
 	 */
 	blk_queue_physical_block_size(mbs->mbs_queue, PAGE_SIZE);
-	//disk = mbs->mbs_disk = alloc_disk(max_part);
-	disk = mbs->mbs_disk = alloc_disk_node(0,nid);
+	disk = mbs->mbs_disk = alloc_disk(max_part);
+	//disk = mbs->mbs_disk = alloc_disk_node(0,nid);
 	if (!disk)
 		goto out_free_queue;
 	disk->major		= MBSDISK_MAJOR;
@@ -575,8 +582,6 @@ static struct mbs_device *mbs_alloc(int i)
 		goto out_free_inode;
 	dax_write_cache(mbs->dax_dev, 1);
 #endif
-
-
 	return mbs;
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
@@ -672,7 +677,7 @@ static int __init mbs_init(void)
 	 *	dynamically.
 	 */
 
-mbs_nr = memblock.pram.cnt;
+//mbs_nr = memblock.pram.cnt;
 	if (register_blkdev(MBSDISK_MAJOR, "mbsdisk"))
 		return -EIO;
 
