@@ -467,8 +467,8 @@ static const struct block_device_operations mbs_fops = {
  * And now the modules code and kernel interface.
  */
 //static int mbs_nr = CONFIG_BLK_DEV_RAM_COUNT;
-//static int mbs_nr = 1;
-int mbs_nr = memblock.pram.cnt;
+static int mbs_nr = 1;
+//int mbs_nr = memblock.pram.cnt;
 module_param(mbs_nr, int, S_IRUGO);
 MODULE_PARM_DESC(mbs_nr, "Maximum number of mbs devices");
 
@@ -646,6 +646,7 @@ static int __init mbs_init(void)
 	 *	dynamically.
 	 */
 
+mbs_nr = memblock.pram.cnt;
 	if (register_blkdev(MBSDISK_MAJOR, "mbsdisk"))
 		return -EIO;
 
