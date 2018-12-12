@@ -467,7 +467,9 @@ static const struct block_device_operations mbs_fops = {
  * And now the modules code and kernel interface.
  */
 //static int mbs_nr = CONFIG_BLK_DEV_RAM_COUNT;
-static int mbs_nr = 1;
+unsigned long mbs_size=memblock.pram.regions[0].size;
+//static int mbs_nr = 1;
+static int mbs_nr = (int)memblock.pram.cnt;
 module_param(mbs_nr, int, S_IRUGO);
 MODULE_PARM_DESC(mbs_nr, "Maximum number of mbs devices");
 
@@ -507,7 +509,8 @@ static struct mbs_device *mbs_alloc(int i)
 	struct mbs_device *mbs;
 	struct gendisk *disk;
 
-	mbs_size = memblock.pram.total_size/1024;//convert to kbytes
+	//mbs_size = memblock.pram.total_size/1024;//convert to kbytes
+	mbs_size = memblock.pram.regions[i].size / 1024;
 	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
 		goto out;
