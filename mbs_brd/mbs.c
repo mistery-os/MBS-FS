@@ -529,7 +529,7 @@ static struct mbs_device *mbs_alloc(int i)
 	//mbs->size = mbs_size = memblock.pram.regions[i].size / 1024;
 	//mbs->size = mbs_size = memblock.pram.total_size;//convert to kbytes
 	//mbs->size = mbs_size = memblock.pram.regions[i].size;
-	mbs_size = memblock.pram.total_size;//bytes
+	mbs->size = mbs_size = memblock.pram.total_size;//bytes
 
 	spin_lock_init(&mbs->mbs_lock);
 	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC);
