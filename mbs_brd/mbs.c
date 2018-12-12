@@ -402,13 +402,10 @@ void *memremap_va=NULL;
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
-	struct page *page;
-	//struct vm_struct *vm;
-
-
 	if (!mbs)
 		return -ENODEV;
 #if 0
+	struct page *page;
 	int order=9;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
@@ -420,6 +417,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
 #if 0
+	//struct vm_struct *vm;
 	unsigned long mbs_size=memblock.pram.regions[0].size;
 	unsigned long mbs_base=memblock.pram.regions[0].base;
 	mbs_size = memblock.pram.total_size;// bytes
