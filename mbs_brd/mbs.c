@@ -402,10 +402,10 @@ void *memremap_va=NULL;
 static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
+	struct page *page;
 	if (!mbs)
 		return -ENODEV;
 //#if 0
-	struct page *page;
 	int order=0;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
@@ -518,8 +518,8 @@ static struct mbs_device *mbs_alloc(int i)
 {
 	struct mbs_device *mbs;
 	struct gendisk *disk;
-	int nid = memblock.pram.regions[i].nid;
-	void *addr;
+	//int nid = memblock.pram.regions[i].nid;
+	//void *addr;
 
 	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
