@@ -403,10 +403,10 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 		long nr_pages, void **kaddr, pfn_t *pfn)
 {
 	struct page *page;
+	int order=0;
 	if (!mbs)
 		return -ENODEV;
 //#if 0
-	int order=0;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
 		return -ENOSPC;
