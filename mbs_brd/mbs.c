@@ -52,7 +52,6 @@ struct mbs_device {
 	size_t			size;
 	u32			pfn_pad;
 	struct kernfs_node	*bb_state;
-	struct badblocks	bb;
 
 	int			mbs_number;
 	struct request_queue	*mbs_queue;
@@ -405,9 +404,6 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 {
 	struct page *page;
 	//struct vm_struct *vm;
-	unsigned long mbs_size=memblock.pram.regions[0].size;
-	unsigned long mbs_base=memblock.pram.regions[0].base;
-	unsigned long total_size = memblock.pram.total_size;// bytes
 
 
 	if (!mbs)
@@ -424,6 +420,8 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
 #if 0
+	unsigned long mbs_size=memblock.pram.regions[0].size;
+	unsigned long mbs_base=memblock.pram.regions[0].base;
 	mbs_size = memblock.pram.total_size;// bytes
 	if (!vmalloc_addr )
 		vmalloc_addr  = vmalloc_pram(mbs_size);//vm = vmalloc(mbs_size);
@@ -435,6 +433,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	return mbs_size/PAGE_SIZE;
 #endif
 #if 0
+	unsigned long total_size = memblock.pram.total_size;// bytes
 	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
 	//page=(struct page *)memremap_va;
 	//page=pfn_to_page(mbs_base>>PAGE_SHIFT);
@@ -445,7 +444,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 #endif
 	resource_size_t offset = PFN_PHYS(pgoff) + mbs->data_offset;
 	*kaddr = mbs->virt_addr + offset;
-	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flasg);
+	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flags);
 	return PHYS_PFN(mbs->size - mbs->pfn_pad -offset);
 }
 
@@ -540,7 +539,8 @@ static struct mbs_device *mbs_alloc(int i)
 	mbs->pfn_flags = PFN_DEV;
 	addr = memremap(mbs->phys_addr, mbs->size, MEMREMAP_WB);
 	if (IS_ERR(addr))
-		return PTR_ERR(addr);
+		goto out;
+		//return PTR_ERR(addr);
 	mbs->virt_addr = addr;
 
 	blk_queue_make_request(mbs->mbs_queue, mbs_make_request);
