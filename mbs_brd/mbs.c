@@ -414,8 +414,8 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	*pfn = page_to_pfn_t(page);
 	return 1;
 #endif
-	pr_info("caller function name is: %pf callee function name is:%s\n",
-		      	__builtin_return_address(0),__func__);
+	//pr_info("caller function name is: %pf callee function name is:%s\n",
+	//	      	__builtin_return_address(0),__func__);
 #if 0
 	//struct vm_struct *vm;
 	unsigned long mbs_size=memblock.pram.regions[0].size;
