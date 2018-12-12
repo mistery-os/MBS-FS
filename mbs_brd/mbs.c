@@ -45,15 +45,22 @@ extern struct memblock memblock;
  * device).
  */
 struct mbs_device {
-	int		mbs_number;
+	phys_addr_t		phys_addr;
+	phys_addr_t		data_offset;
+	u64			pfn_flags;
+	void			*virt_addr;
+	size_t			size;
+	u32			pfn_pad;
+	struct kernfs_node	*bb_state;
+	struct badblocks	bb;
 
+	int			mbs_number;
 	struct request_queue	*mbs_queue;
 	struct gendisk		*mbs_disk;
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 	struct dax_device	*dax_dev;
 #endif
 	struct list_head	mbs_list;
-
 	/*
 	 * Backing store of pages and lock to protect it. This is the contents
 	 * of the block device.
@@ -406,13 +413,13 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	if (!mbs)
 		return -ENODEV;
 #if 0
-
 	int order=9;
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
 		return -ENOSPC;
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
+	return 1;
 #endif
 	pr_info("caller function name is: %pf callee function name is:%s\n",
 		      	__builtin_return_address(0),__func__);
@@ -425,17 +432,21 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	//*pfn = (vmalloc_to_pfn(vmalloc_addr));
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
+	return mbs_size/PAGE_SIZE;
 #endif
+#if 0
 	memremap_va=memremap(mbs_base,mbs_size, MEMREMAP_WB);
 	//page=(struct page *)memremap_va;
 	//page=pfn_to_page(mbs_base>>PAGE_SHIFT);
 	//*pfn = page_to_pfn_t(page);
 	*kaddr=memremap_va;
 	*pfn = phys_to_pfn_t((phys_addr_t)mbs_base,PFN_MAP);
-
 	return total_size/PAGE_SIZE;
-	return mbs_size/PAGE_SIZE;
-	return 1;
+#endif
+	resource_size_t offset = PFN_PHYS(pgoff) + mbs->data_offset;
+	*kaddr = mbs->virt_addr + offset;
+	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flasg);
+	return PHYS_PFN(mbs->size - mbs->pfn_pad -offset);
 }
 
 static long mbs_dax_direct_access(struct dax_device *dax_dev,
@@ -478,7 +489,7 @@ unsigned long mbs_size = 67108864;
 module_param(mbs_size, ulong, S_IRUGO);
 MODULE_PARM_DESC(mbs_size, "Size of each RAM disk in kbytes.");
 
-static int max_part = 1;
+static int max_part = 0;
 module_param(max_part, int, S_IRUGO);
 MODULE_PARM_DESC(max_part, "Num Minors to reserve between devices");
 
@@ -507,22 +518,35 @@ static struct mbs_device *mbs_alloc(int i)
 {
 	struct mbs_device *mbs;
 	struct gendisk *disk;
+	int nid = memblock.pram.regions[i].nid;
+	void *addr;
 
-	//mbs_size = memblock.pram.total_size/1024;//convert to kbytes
-	mbs_size = memblock.pram.regions[i].size / 1024;
 	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
 		goto out;
 	mbs->mbs_number		= i;
+	mbs->phys_addr = memblock.pram.regions[i].base;
+	//mbs_size = memblock.pram.total_size/1024;//convert to kbytes
+	//mbs->size = mbs_size = memblock.pram.regions[i].size / 1024;
+	mbs->size = mbs_size = memblock.pram.regions[i].size;
+
 	spin_lock_init(&mbs->mbs_lock);
 	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC);
 
-	mbs->mbs_queue = blk_alloc_queue(GFP_KERNEL);
+	//mbs->mbs_queue = blk_alloc_queue(GFP_KERNEL);
+	mbs->mbs_queue = blk_alloc_queue_node(GFP_KERNEL, nid);
 	if (!mbs->mbs_queue)
 		goto out_free_dev;
+	mbs->pfn_flags = PFN_DEV;
+	addr = memremap(mbs->phys_addr, mbs->size, MEMREMAP_WB);
+	if (IS_ERR(addr))
+		return PTR_ERR(addr);
+	mbs->virt_addr = addr;
 
 	blk_queue_make_request(mbs->mbs_queue, mbs_make_request);
-	blk_queue_max_hw_sectors(mbs->mbs_queue, 1024);
+	//blk_queue_max_hw_sectors(mbs->mbs_queue, 1024);
+	blk_queue_max_hw_sectors(mbs->mbs_queue, UINT_MAX);
+	queue_flag_set_unlocked(QUEUE_FLAG_NONROT, mbs->mbs_queue);
 
 	/* This is so fdisk will align partitions on 4k, because of
 	 * direct_access API needing 4k alignment, returning a PFN
@@ -531,7 +555,8 @@ static struct mbs_device *mbs_alloc(int i)
 	 *  is harmless)
 	 */
 	blk_queue_physical_block_size(mbs->mbs_queue, PAGE_SIZE);
-	disk = mbs->mbs_disk = alloc_disk(max_part);
+	//disk = mbs->mbs_disk = alloc_disk(max_part);
+	disk = mbs->mbs_disk = alloc_disk_node(0,nid);
 	if (!disk)
 		goto out_free_queue;
 	disk->major		= MBSDISK_MAJOR;
@@ -541,13 +566,15 @@ static struct mbs_device *mbs_alloc(int i)
 	disk->queue		= mbs->mbs_queue;
 	disk->flags		= GENHD_FL_EXT_DEVT;
 	sprintf(disk->disk_name, "mbs%d", i);
-	set_capacity(disk, mbs_size * 2);
+	//set_capacity(disk, mbs_size * 2);
+	set_capacity(disk, mbs->size / 512);
 
 #ifdef CONFIG_BLK_DEV_PRAM_DAX
 	queue_flag_set_unlocked(QUEUE_FLAG_DAX, mbs->mbs_queue);
 	mbs->dax_dev = alloc_dax(mbs, disk->disk_name, &mbs_dax_ops);
 	if (!mbs->dax_dev)
 		goto out_free_inode;
+	dax_write_cache(mbs->dax_dev, 1);
 #endif
 
 
