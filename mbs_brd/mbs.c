@@ -468,7 +468,7 @@ static const struct block_device_operations mbs_fops = {
  */
 //static int mbs_nr = CONFIG_BLK_DEV_RAM_COUNT;
 //static int mbs_nr = 1;
-static int mbs_nr = (memblock.pram.cnt);
+int mbs_nr = memblock.pram.cnt;
 module_param(mbs_nr, int, S_IRUGO);
 MODULE_PARM_DESC(mbs_nr, "Maximum number of mbs devices");
 
