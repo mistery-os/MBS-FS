@@ -443,7 +443,7 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	resource_size_t offset = PFN_PHYS(pgoff) + mbs->data_offset;
 	*kaddr = mbs->virt_addr + offset;
 	*pfn = phys_to_pfn_t(mbs->phys_addr + offset, mbs->pfn_flags);
-	return PHYS_PFN(mbs->size - mbs->pfn_pad -offset);
+	return PHYS_PFN(mbs->size - mbs->pfn_pad - offset);
 }
 
 static long mbs_dax_direct_access(struct dax_device *dax_dev,
@@ -525,8 +525,8 @@ static struct mbs_device *mbs_alloc(int i)
 	mbs->phys_addr = memblock.pram.regions[i].base;
 	//mbs_size = memblock.pram.total_size/1024;//convert to kbytes
 	//mbs->size = mbs_size = memblock.pram.regions[i].size / 1024;
-	//////////mbs->size = mbs_size = memblock.pram.regions[i].size;
-	mbs->size = mbs_size = memblock.pram.total_size;//convert to kbytes
+	//mbs->size = mbs_size = memblock.pram.total_size;//convert to kbytes
+	mbs->size = mbs_size = memblock.pram.regions[i].size;
 
 	spin_lock_init(&mbs->mbs_lock);
 	INIT_RADIX_TREE(&mbs->mbs_pages, GFP_ATOMIC);
