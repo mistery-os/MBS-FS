@@ -435,7 +435,7 @@ static struct nova_inode *nova_init(struct super_block *sb,
 	INIT_TIMING(init_time);
 
 	NOVA_START_TIMING(new_init_t, init_time);
-	nova_info("creating an empty nova of size %lu\n", size);
+	nova_info("creating an empty nova of size %lu ( 0x%lx ) \n", size,size);
 	sbi->num_blocks = ((unsigned long)(size) >> PAGE_SHIFT);
 
 	nova_dbgv("nova: Default block size set to 4K\n");

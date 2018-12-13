@@ -524,8 +524,8 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 		pair->journal_head = pair->journal_tail = block;
 		nova_flush_buffer(pair, CACHELINE_SIZE, 0);
 		nova_memlock_range(sb, pair, CACHELINE_SIZE);
+nova_info("%s: where am i (cpus = %d)\n",__func__,i);
 	}
-nova_info("%s: where am i\n",__func__);
 	PERSISTENT_BARRIER();
 	return nova_lite_journal_soft_init_regions(sb);
 }

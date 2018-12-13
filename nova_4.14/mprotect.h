@@ -41,6 +41,8 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 				(unsigned long)sbi->virt_addr[nid],
 				(unsigned long)(sbi->virt_addr[nid] + memblock.pram.regions[nid].size),
 				(unsigned long)p, (unsigned long)(p + len));
+		nova_err(sb, "nid = %d, cpuid = %id, p= 0x%lx, len = 0x%lx\n",nid,cpuid,
+			(unsigned long)p, (unsigned long)len);
 		dump_stack();
 		return -EINVAL;
 	}
