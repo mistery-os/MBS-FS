@@ -35,7 +35,7 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 	int nid = (int)(cpuid/10);
 
 	if (p < sbi->virt_addr[nid] ||
-			p + len > sbi->virt_addr[nid] + sbi->initsize) {
+			p + len > sbi->virt_addr[nid] + memblock.pram.regions[nid].size) {
 		nova_err(sb, "access pmem out of range: pmem range 0x%lx - 0x%lx, "
 				"access range 0x%lx - 0x%lx\n",
 				(unsigned long)sbi->virt_addr[nid],
