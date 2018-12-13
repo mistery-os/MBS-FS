@@ -179,6 +179,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	sbi->phys_addr = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
 	sbi->initsize = size;
+	mbs_size = memblock.pram.regions[3].size;
 	sbi->replica_reserved_inodes_addr = sbi->virt_addr[ 3 ] + mbs_size -
 		(sbi->tail_reserved_blocks << PAGE_SHIFT);
 	sbi->replica_sb_addr = sbi->virt_addr[ 3 ] + mbs_size - PAGE_SIZE;
