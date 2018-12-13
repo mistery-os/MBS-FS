@@ -1402,7 +1402,8 @@ int nova_snapshot_init_regions(struct super_block *sb)
 
 	INIT_RADIX_TREE(&sbi->snapshot_info_tree, GFP_ATOMIC);
 	init_waitqueue_head(&sbi->snapshot_mmap_wait);
-	ret = nova_snapshot_cleaner_init(sbi);
+//	ret = nova_snapshot_cleaner_init(sbi);
+ret=0;
 
 	return ret;
 }
