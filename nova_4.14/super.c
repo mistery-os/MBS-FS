@@ -469,7 +469,8 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	nova_init_blockmap(sb, 0);
 
-	if (nova_lite_journal_hard_init(sb) < 0) {
+	//if (nova_lite_journal_hard_init(sb) < 0) {
+	if (nova_lite_journal_hard_init_regions(sb) < 0) {
 		nova_err(sb, "Lite journal hard initialization failed\n");
 		return ERR_PTR(-EINVAL);
 	}

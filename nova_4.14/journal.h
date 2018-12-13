@@ -32,6 +32,18 @@ struct journal_ptr_pair {
 };
 
 static inline
+struct journal_ptr_pair *nova_get_journal_pointers_regions(struct super_block *sb,
+	int cpu)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+
+	if (cpu >= sbi->cpus)
+		BUG();
+
+	return (struct journal_ptr_pair *)((char *)nova_get_block_regions(sb,
+		NOVA_DEF_BLOCK_SIZE_4K * JOURNAL_START, (int)(cpu/10)) + cpu * CACHELINE_SIZE);
+}
+static inline
 struct journal_ptr_pair *nova_get_journal_pointers(struct super_block *sb,
 	int cpu)
 {

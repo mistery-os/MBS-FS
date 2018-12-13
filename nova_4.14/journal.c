@@ -463,6 +463,39 @@ int nova_lite_journal_soft_init(struct super_block *sb)
 }
 
 /* Initialized persistent journal state */
+int nova_lite_journal_hard_init_regions(struct super_block *sb)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	struct nova_inode_info_header sih;
+	struct journal_ptr_pair *pair;
+	unsigned long blocknr = 0;
+	int allocated;
+	int i;
+	u64 block;
+
+	sih.ino = NOVA_LITEJOURNAL_INO;
+	sih.i_blk_type = NOVA_BLOCK_TYPE_4K;
+
+	for (i = 0; i < sbi->cpus; i++) {
+		pair = nova_get_journal_pointers_regions(sb, i);
+
+		allocated = nova_new_log_blocks_regions(sb, &sih, &blocknr, 1,
+			ALLOC_INIT_ZERO, ANY_CPU, ALLOC_FROM_HEAD);
+		nova_dbg_verbose("%s: allocate log @ 0x%lx\n", __func__,
+							blocknr);
+		if (allocated != 1 || blocknr == 0)
+			return -ENOSPC;
+
+		block = nova_get_block_off(sb, blocknr, NOVA_BLOCK_TYPE_4K);
+		nova_memunlock_range_regions(sb, pair, CACHELINE_SIZE,i);
+		pair->journal_head = pair->journal_tail = block;
+		nova_flush_buffer(pair, CACHELINE_SIZE, 0);
+		nova_memlock_range(sb, pair, CACHELINE_SIZE);
+	}
+
+	PERSISTENT_BARRIER();
+	return nova_lite_journal_soft_init(sb);
+}
 int nova_lite_journal_hard_init(struct super_block *sb)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);

@@ -195,7 +195,14 @@ static inline struct nova_super_block
 /* If this is part of a read-modify-write of the super block,
  * nova_memunlock_super() before calling!
  */
-static inline struct nova_super_block *nova_get_super(struct super_block *sb)
+static inline struct nova_super_block *nova_get_super_regions(struct super_block *sb,
+		int nid)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+
+	return (struct nova_super_block *)sbi->virt_addr[nid];//YONGSEOB
+	return (struct nova_super_block *)sbi->virt_addr;
+}static inline struct nova_super_block *nova_get_super(struct super_block *sb)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 

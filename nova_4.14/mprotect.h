@@ -24,9 +24,29 @@
 #include <linux/fs.h>
 #include "nova_def.h"
 #include "super.h"
+#include <linux/memblock.h>
+extern struct memblock memblock;
 
 extern void nova_error_mng(struct super_block *sb, const char *fmt, ...);
+static inline int nova_range_check_regions(struct super_block *sb, void *p,
+					 unsigned long len, int cpuid)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	int nid = (int)(cpuid/10);
 
+	if (p < sbi->virt_addr[nid] ||
+			p + len > sbi->virt_addr[nid] + sbi->initsize) {
+		nova_err(sb, "access pmem out of range: pmem range 0x%lx - 0x%lx, "
+				"access range 0x%lx - 0x%lx\n",
+				(unsigned long)sbi->virt_addr[nid],
+				(unsigned long)(sbi->virt_addr[nid] + memblock.pram.regions[nid].size),
+				(unsigned long)p, (unsigned long)(p + len));
+		dump_stack();
+		return -EINVAL;
+	}
+
+	return 0;
+}
 static inline int nova_range_check(struct super_block *sb, void *p,
 					 unsigned long len)
 {
@@ -100,7 +120,15 @@ __nova_memlock_range(void *p, unsigned long len)
 {
 	nova_writeable(p, len, 0);
 }
+static inline void nova_memunlock_range_regions(struct super_block *sb, void *p,
+					 unsigned long len, int cpuid)
+{
+	if (nova_range_check_regions(sb, p, len, cpuid))
+		return;
 
+	if (nova_is_protected(sb))
+		__nova_memunlock_range(p, len);
+}
 static inline void nova_memunlock_range(struct super_block *sb, void *p,
 					 unsigned long len)
 {
