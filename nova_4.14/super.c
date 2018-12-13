@@ -674,7 +674,6 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 			measure_timing, metadata_csum,
 			wprotect,	 data_csum,
 			data_parity, dram_struct_csum);
-//<<<<<<<<<<<<<<<-nova: assertion failed nova.h:338
 	get_random_bytes(&random, sizeof(u32));
 	atomic_set(&sbi->next_generation, random);
 
@@ -714,7 +713,6 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 	for (i = 0; i < 8; i++)
 		sbi->zero_csum[i] = nova_crc32c(NOVA_INIT_CSUM,
 				sbi->zeroed_page, strp_size);
-nova_info("%s: where are you now?\n",__func__);
 	sbi->zero_parity = kzalloc(strp_size, GFP_KERNEL);
 
 	if (!sbi->zero_parity) {
@@ -723,10 +721,9 @@ nova_info("%s: where are you now?\n",__func__);
 				__func__);
 		goto out;
 	}
-//>>>>>>>>>>>>>>>>>> nova: assertion failed nova.h:338
 	sbi->snapshot_si = kmem_cache_alloc(nova_inode_cachep, GFP_NOFS);
-	nova_snapshot_init(sb);
-
+	//nova_snapshot_init(sb);
+	nova_snapshot_init_regions(sb);
 	retval = nova_parse_options(data, sbi, 0);
 	if (retval) {
 		nova_err(sb, "%s: Failed to parse nova command line options.",

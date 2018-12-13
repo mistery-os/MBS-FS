@@ -87,6 +87,7 @@ static int nova_data_csum_init_free_list_regions(struct super_block *sb,
 
 	return 0;
 }
+#if 0
 static int nova_data_csum_init_free_list(struct super_block *sb,
 	struct free_list *free_list)
 {
@@ -113,7 +114,7 @@ static int nova_data_csum_init_free_list(struct super_block *sb,
 
 	return 0;
 }
-
+#endif
 static int nova_data_parity_init_free_list_regions(struct super_block *sb,
 	struct free_list *free_list)
 {
@@ -143,6 +144,7 @@ static int nova_data_parity_init_free_list_regions(struct super_block *sb,
 
 	return 0;
 }
+#if 0
 static int nova_data_parity_init_free_list(struct super_block *sb,
 	struct free_list *free_list)
 {
@@ -172,8 +174,7 @@ static int nova_data_parity_init_free_list(struct super_block *sb,
 
 	return 0;
 }
-
-
+#endif
 // Initialize a free list.  Each CPU gets an equal share of the block space to
 // manage.
 static void nova_init_free_list_regions(struct super_block *sb,

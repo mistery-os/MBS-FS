@@ -295,6 +295,15 @@ static inline u64 nova_get_reserved_inode_addr(struct super_block *sb,
 			inode_number * NOVA_INODE_SIZE;
 }
 
+static inline u64 nova_get_alter_reserved_inode_addr_regions(struct super_block *sb,
+	u64 inode_number)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	int nid=3;//memblock.pram.cnt-1
+
+	return nova_get_addr_off_regions(sbi, sbi->replica_reserved_inodes_addr, nid) +
+			inode_number * NOVA_INODE_SIZE;
+}
 static inline u64 nova_get_alter_reserved_inode_addr(struct super_block *sb,
 	u64 inode_number)
 {

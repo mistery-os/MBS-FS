@@ -1384,7 +1384,28 @@ static int nova_snapshot_cleaner_init(struct nova_sb_info *sbi)
 	nova_info("Start NOVA snapshot cleaner thread.\n");
 	return ret;
 }
+int nova_snapshot_init_regions(struct super_block *sb)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	struct nova_inode_info_header *sih;
+	u64 ino = NOVA_SNAPSHOT_INO;
+	int ret;
 
+	sih = &sbi->snapshot_si->header;
+	nova_init_header(sb, sih, 0);
+	sih->pi_addr = nova_get_reserved_inode_addr(sb, ino);
+//<<<<<<<<<<<<<<<-nova: assertion failed nova.h:338
+	sih->alter_pi_addr = nova_get_alter_reserved_inode_addr(sb, ino);
+//>>>>>>>>>>>>>>>>>> nova: assertion failed nova.h:338
+	sih->ino = ino;
+	sih->i_blk_type = NOVA_DEFAULT_BLOCK_TYPE;
+
+	INIT_RADIX_TREE(&sbi->snapshot_info_tree, GFP_ATOMIC);
+	init_waitqueue_head(&sbi->snapshot_mmap_wait);
+	ret = nova_snapshot_cleaner_init(sbi);
+
+	return ret;
+}
 int nova_snapshot_init(struct super_block *sb)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
@@ -1394,6 +1415,7 @@ int nova_snapshot_init(struct super_block *sb)
 
 	sih = &sbi->snapshot_si->header;
 	nova_init_header(sb, sih, 0);
+nova_info("%s: where are you now?\n",__func__);
 	sih->pi_addr = nova_get_reserved_inode_addr(sb, ino);
 	sih->alter_pi_addr = nova_get_alter_reserved_inode_addr(sb, ino);
 	sih->ino = ino;
