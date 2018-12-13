@@ -342,8 +342,10 @@ static inline int nova_get_reference(struct super_block *sb, u64 block,
 static inline u64
 nova_get_addr_off_regions(struct nova_sb_info *sbi, void *addr, int nid)
 {
+	unsigned long size = memblock.pram.regions[nid].size;
+	nova_info("%s: nid = %d, size = %ld\n",nid,size);
 	NOVA_ASSERT((addr >= sbi->virt_addr[nid]) &&
-			(addr < (sbi->virt_addr[nid] + memblock.pram.regions[nid].size)));
+			(addr < (sbi->virt_addr[nid] + size)));
 	return (u64)(addr - sbi->virt_addr[nid]);
 }
 static inline u64
