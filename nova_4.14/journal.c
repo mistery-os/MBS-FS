@@ -428,6 +428,39 @@ void nova_commit_lite_transaction(struct super_block *sb, u64 tail, int cpu)
 /**************************** Initialization ******************************/
 
 // Initialized DRAM journal state, validate, and recover
+int nova_lite_journal_soft_init_regions(struct super_block *sb)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	struct journal_ptr_pair *pair;
+	int i;
+	int ret = 0;
+
+	sbi->journal_locks = kcalloc(sbi->cpus, sizeof(spinlock_t),
+				     GFP_KERNEL);
+	if (!sbi->journal_locks)
+		return -ENOMEM;
+
+	for (i = 0; i < sbi->cpus; i++)
+		spin_lock_init(&sbi->journal_locks[i]);
+
+	for (i = 0; i < sbi->cpus; i++) {
+		pair = nova_get_journal_pointers_regions(sb, i);
+		if (pair->journal_head == pair->journal_tail)
+			continue;
+
+		/* Ensure all entries are genuine */
+		ret = nova_check_journal_entries(sb, pair);
+		if (ret) {
+			nova_err(sb, "Journal %d checksum failure\n", i);
+			ret = -EINVAL;
+			break;
+		}
+
+		ret = nova_recover_lite_journal(sb, pair);
+	}
+
+	return ret;
+}
 int nova_lite_journal_soft_init(struct super_block *sb)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
@@ -487,16 +520,14 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 			return -ENOSPC;
 
 		block = nova_get_block_off(sb, blocknr, NOVA_BLOCK_TYPE_4K);
-		nova_info("%s: before nova_memunlock_range_regions\n",__func__);
 		nova_memunlock_range_regions(sb, pair, CACHELINE_SIZE,i);
-		nova_info("%s: after nova_memunlock_range_regions\n",__func__);
 		pair->journal_head = pair->journal_tail = block;
 		nova_flush_buffer(pair, CACHELINE_SIZE, 0);
 		nova_memlock_range(sb, pair, CACHELINE_SIZE);
 	}
-
+nova_info("%s: where am i\n",__func__);
 	PERSISTENT_BARRIER();
-	return nova_lite_journal_soft_init(sb);
+	return nova_lite_journal_soft_init_regions(sb);
 }
 int nova_lite_journal_hard_init(struct super_block *sb)
 {
