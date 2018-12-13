@@ -330,8 +330,16 @@ static inline int nova_get_reference(struct super_block *sb, u64 block,
 	rc = memcpy_mcsafe(dram, *nvmm, size);
 	return rc;
 }
-
-
+#if 1
+static inline u64
+nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
+{
+	NOVA_ASSERT((addr >= sbi->virt_addr[0]) &&
+			(addr < (sbi->virt_addr[0] + sbi->initsize)));
+	return (u64)(addr - sbi->virt_addr[0]);
+}
+#endif
+#if 0
 static inline u64
 nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 {
@@ -339,7 +347,7 @@ nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 			(addr < (sbi->virt_addr + sbi->initsize)));
 	return (u64)(addr - sbi->virt_addr);
 }
-
+#endif
 static inline u64
 nova_get_block_off(struct super_block *sb, unsigned long blocknr,
 		    unsigned short btype)

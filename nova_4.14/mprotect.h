@@ -32,6 +32,25 @@ static inline int nova_range_check(struct super_block *sb, void *p,
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 
+	if (p < sbi->virt_addr[0] ||
+			p + len > sbi->virt_addr[0] + sbi->initsize) {
+		nova_err(sb, "access pmem out of range: pmem range 0x%lx - 0x%lx, "
+				"access range 0x%lx - 0x%lx\n",
+				(unsigned long)sbi->virt_addr[0],
+				(unsigned long)(sbi->virt_addr[0] + sbi->initsize),
+				(unsigned long)p, (unsigned long)(p + len));
+		dump_stack();
+		return -EINVAL;
+	}
+
+	return 0;
+}
+#if 0
+static inline int nova_range_check(struct super_block *sb, void *p,
+					 unsigned long len)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+
 	if (p < sbi->virt_addr ||
 			p + len > sbi->virt_addr + sbi->initsize) {
 		nova_err(sb, "access pmem out of range: pmem range 0x%lx - 0x%lx, "
@@ -45,7 +64,7 @@ static inline int nova_range_check(struct super_block *sb, void *p,
 
 	return 0;
 }
-
+#endif
 extern int nova_writeable(void *vaddr, unsigned long size, int rw);
 
 static inline int nova_is_protected(struct super_block *sb)
