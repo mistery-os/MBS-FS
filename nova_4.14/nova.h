@@ -346,6 +346,8 @@ nova_get_addr_off_regions(struct nova_sb_info *sbi, void *addr, int nid)
 			(addr < (sbi->virt_addr[nid] + memblock.pram.regions[nid].size)));
 	return (u64)(addr - sbi->virt_addr[nid]);
 }
+#endif
+#if 0
 static inline u64
 nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 {
@@ -353,8 +355,6 @@ nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 			(addr < (sbi->virt_addr[0] + sbi->initsize)));
 	return (u64)(addr - sbi->virt_addr[0]);
 }
-#endif
-#if 0
 static inline u64
 nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 {
@@ -1142,6 +1142,7 @@ int nova_delete_dead_inode(struct super_block *sb, u64 ino);
 int nova_create_snapshot(struct super_block *sb);
 int nova_delete_snapshot(struct super_block *sb, u64 epoch_id);
 int nova_snapshot_init(struct super_block *sb);
+int nova_snapshot_init_regions(struct super_block *sb);
 
 
 /* symlink.c */
