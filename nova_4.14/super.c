@@ -157,14 +157,9 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	for (i=0; i < memblock.pram.cnt; i++){
 		mbs_base = memblock.pram.regions[i].base;
 		mbs_size = memblock.pram.regions[i].size;
-	//nova_info("%s: mbs_virt_addr UP\n",__func__);
-		//mbs_virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
-	//nova_info("%s: mbs_virt_addr DOWN\n",__func__);
 		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
-	nova_info("%s: sbi->virt_addr UP\n",__func__);
 		//sbi->virt_addr[i] = mbs_virt_addr[i];
 		sbi->virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
-	nova_info("%s: sbi->virt_addr DOWN\n",__func__);
 		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
 			nova_err(sb, "ioremap of the nova image failed(1) regions[%d]\n",i);
@@ -190,7 +185,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	//sbi->replica_reserved_inodes_addr = virt_addr + size -
 	//	(sbi->tail_reserved_blocks << PAGE_SHIFT);
 	//sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
-#if 1
+#if 0
 	for (i=0; i < memblock.pram.cnt; i++){
 		nova_info("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
 				__func__, sbi->s_bdev->bd_disk->disk_name,
@@ -453,9 +448,7 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	nova_dbgv("max file name len %d\n", (unsigned int)NOVA_NAME_LEN);
 
-	nova_info("%s: before nova_get_super\n",__func__);
 	super = nova_get_super(sb);
-	nova_info("%s: after nova_get_super\n",__func__);
 
 	nova_memunlock_reserved(sb, super);
 	/* clear out super-block and inode table */
@@ -514,7 +507,6 @@ static struct nova_inode *nova_init(struct super_block *sb,
 		cpu_to_le32(get_seconds());
 	root_i->nova_ino = cpu_to_le64(NOVA_ROOT_INO);
 	root_i->valid = 1;
-	nova_info("nova_init: before nova_flush_buffer(root_i\n");
 	/* nova_sync_inode(root_i); */
 	nova_flush_buffer(root_i, sizeof(*root_i), false);
 	nova_memlock_inode(sb, root_i);
@@ -682,7 +674,7 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 			measure_timing, metadata_csum,
 			wprotect,	 data_csum,
 			data_parity, dram_struct_csum);
-
+//<<<<<<<<<<<<<<<-nova: assertion failed nova.h:338
 	get_random_bytes(&random, sizeof(u32));
 	atomic_set(&sbi->next_generation, random);
 
@@ -731,7 +723,7 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 				__func__);
 		goto out;
 	}
-
+//>>>>>>>>>>>>>>>>>> nova: assertion failed nova.h:338
 	sbi->snapshot_si = kmem_cache_alloc(nova_inode_cachep, GFP_NOFS);
 	nova_snapshot_init(sb);
 
@@ -971,7 +963,9 @@ static void nova_put_super(struct super_block *sb)
 		nova_save_inode_list_to_log(sb);
 		/* Save everything before blocknode mapping! */
 		nova_save_blocknode_mappings_to_log(sb);
-		sbi->virt_addr[0] = NULL;
+		for (i=0; i < memblock.pram.cnt; i++){
+			sbi->virt_addr[i] = NULL;
+		}
 	}
 
 	nova_delete_free_lists(sb);

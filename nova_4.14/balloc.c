@@ -27,6 +27,8 @@
 #include <linux/bitops.h>
 #include "nova.h"
 #include "inode.h"
+#include <linux/memblock.h>
+extern struct memblock memblock;
 
 int nova_alloc_block_free_lists(struct super_block *sb)
 {
@@ -59,7 +61,7 @@ void nova_delete_free_lists(struct super_block *sb)
 	sbi->free_lists = NULL;
 }
 
-static int nova_data_csum_init_free_list(struct super_block *sb,
+static int nova_data_csum_init_free_list_regions(struct super_block *sb,
 	struct free_list *free_list)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
@@ -69,7 +71,7 @@ static int nova_data_csum_init_free_list(struct super_block *sb,
 	 * each stripe for each page.  We replicate the checksums at the
 	 * beginning and end of per-cpu region that holds the data they cover.
 	 */
-	data_csum_blocks = ((sbi->initsize >> NOVA_STRIPE_SHIFT)
+	data_csum_blocks = ((memblock.pram.regions[0].size >> NOVA_STRIPE_SHIFT)
 				* NOVA_DATA_CSUM_LEN) >> PAGE_SHIFT;
 	free_list->csum_start = free_list->block_start;
 	free_list->block_start += data_csum_blocks / sbi->cpus;
@@ -85,8 +87,62 @@ static int nova_data_csum_init_free_list(struct super_block *sb,
 
 	return 0;
 }
+static int nova_data_csum_init_free_list(struct super_block *sb,
+	struct free_list *free_list)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	unsigned long data_csum_blocks;
 
+	/* Allocate pages to hold data checksums.  We store one checksum for
+	 * each stripe for each page.  We replicate the checksums at the
+	 * beginning and end of per-cpu region that holds the data they cover.
+	 */
+	data_csum_blocks = ((sbi->initsize >> NOVA_STRIPE_SHIFT)
+				* NOVA_DATA_CSUM_LEN) >> PAGE_SHIFT;
+	free_list->csum_start = free_list->block_start;
+	free_list->block_start += data_csum_blocks / 10;
+	if (data_csum_blocks % 10)
+		free_list->block_start++;
 
+	free_list->num_csum_blocks =
+		free_list->block_start - free_list->csum_start;
+
+	free_list->replica_csum_start = free_list->block_end + 1 -
+						free_list->num_csum_blocks;
+	free_list->block_end -= free_list->num_csum_blocks;
+
+	return 0;
+}
+
+static int nova_data_parity_init_free_list_regions(struct super_block *sb,
+	struct free_list *free_list)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	unsigned long blocksize, total_blocks, parity_blocks;
+
+	/* Allocate blocks to store data block parity stripes.
+	 * Always reserve in case user turns it off at init mount but later
+	 * turns it on.
+	 */
+	blocksize = sb->s_blocksize;
+	total_blocks = memblock.pram.regions[0].size / blocksize;
+	parity_blocks = total_blocks / (blocksize / NOVA_STRIPE_SIZE + 1);
+	if (total_blocks % (blocksize / NOVA_STRIPE_SIZE + 1))
+		parity_blocks++;
+
+	free_list->parity_start = free_list->block_start;
+	free_list->block_start += parity_blocks / 10;
+	if (parity_blocks % 10)
+		free_list->block_start++;
+
+	free_list->num_parity_blocks =
+		free_list->block_start - free_list->parity_start;
+
+	free_list->replica_parity_start = free_list->block_end + 1 -
+		free_list->num_parity_blocks;
+
+	return 0;
+}
 static int nova_data_parity_init_free_list(struct super_block *sb,
 	struct free_list *free_list)
 {
@@ -120,6 +176,35 @@ static int nova_data_parity_init_free_list(struct super_block *sb,
 
 // Initialize a free list.  Each CPU gets an equal share of the block space to
 // manage.
+static void nova_init_free_list_regions(struct super_block *sb,
+	struct free_list *free_list, int index)
+{
+	struct nova_sb_info *sbi = NOVA_SB(sb);
+	unsigned long per_list_blocks;
+	int nid=(int)(index/10);
+#if 0
+	if (0 <= index && index < 10)
+		nid = 0;
+	else if ( 10 <= index && index < 20 )
+		nid = 1;
+	else if ( 20 <= index && index < 30 )
+		nid = 2;
+	else if ( 30 <= index && index < 40 )
+		nid = 3;	
+#endif
+	per_list_blocks = memblock.pram.regions[nid].size / 10 ;//# of nodes
+
+	free_list->block_start = per_list_blocks * (index % 10);//# of cores/node
+	free_list->block_end = free_list->block_start +
+					per_list_blocks - 1;
+	if (index == 0)
+		free_list->block_start += sbi->head_reserved_blocks;
+	if (index == sbi->cpus - 1)
+		free_list->block_end -= sbi->tail_reserved_blocks;
+
+	nova_data_csum_init_free_list_regions(sb, free_list);
+	nova_data_parity_init_free_list_regions(sb, free_list);
+}
 static void nova_init_free_list(struct super_block *sb,
 	struct free_list *free_list, int index)
 {
@@ -164,7 +249,8 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 	for (i = 0; i < sbi->cpus; i++) {
 		free_list = nova_get_free_list(sb, i);
 		tree = &(free_list->block_free_tree);
-		nova_init_free_list(sb, free_list, i);
+		//nova_init_free_list(sb, free_list, i);
+		nova_init_free_list_regions(sb, free_list, i);
 
 		/* For recovery, update these fields later */
 		if (recovery == 0) {
