@@ -117,7 +117,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	struct nova_sb_info *sbi)
 {
 	void *virt_addr = NULL;
-	void **mbs_virt_addr = NULL;
+	//void **mbs_virt_addr = NULL;
 	pfn_t __pfn_t;
 	pfn_t pfn;
 	long size;
@@ -157,11 +157,13 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	for (i=0; i < memblock.pram.cnt; i++){
 		mbs_base = memblock.pram.regions[i].base;
 		mbs_size = memblock.pram.regions[i].size;
-	nova_info("%s: mbs_virt_addr UP\n",__func__);
-		mbs_virt_addr[i]=memremap(mbs_base, mbs_size, MEMREMAP_WB);
-	nova_info("%s: mbs_virt_addr DOWN\n",__func__);
+	//nova_info("%s: mbs_virt_addr UP\n",__func__);
+		//mbs_virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
+	//nova_info("%s: mbs_virt_addr DOWN\n",__func__);
 		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
-		sbi->virt_addr[i] = mbs_virt_addr[i];
+	nova_info("%s: sbi->virt_addr UP\n",__func__);
+		//sbi->virt_addr[i] = mbs_virt_addr[i];
+		sbi->virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
 	nova_info("%s: sbi->virt_addr DOWN\n",__func__);
 		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
@@ -182,9 +184,9 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	sbi->phys_addr = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
 	sbi->initsize = size;
-	sbi->replica_reserved_inodes_addr = mbs_virt_addr[ i - 1 ] + size -
+	sbi->replica_reserved_inodes_addr = sbi->virt_addr[ i - 1 ] + size -
 		(sbi->tail_reserved_blocks << PAGE_SHIFT);
-	sbi->replica_sb_addr = mbs_virt_addr[ i - 1 ] + size - PAGE_SIZE;
+	sbi->replica_sb_addr = sbi->virt_addr[ i - 1 ] + size - PAGE_SIZE;
 	//sbi->replica_reserved_inodes_addr = virt_addr + size -
 	//	(sbi->tail_reserved_blocks << PAGE_SHIFT);
 	//sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
