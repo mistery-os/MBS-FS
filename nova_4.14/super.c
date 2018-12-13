@@ -150,7 +150,6 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		nova_err(sb, "direct_access failed\n");
 		return -EINVAL;
 	}
-	nova_info("%s: memblock.pram.total_size\n",__func__);
 #if 1
 	int i;
 	unsigned long mbs_base;
@@ -158,9 +157,12 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	for (i=0; i < memblock.pram.cnt; i++){
 		mbs_base = memblock.pram.regions[i].base;
 		mbs_size = memblock.pram.regions[i].size;
+	nova_info("%s: mbs_virt_addr UP\n",__func__);
 		mbs_virt_addr[i]=memremap(mbs_base, mbs_size, MEMREMAP_WB);
+	nova_info("%s: mbs_virt_addr DOWN\n",__func__);
 		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
 		sbi->virt_addr[i] = mbs_virt_addr[i];
+	nova_info("%s: sbi->virt_addr DOWN\n",__func__);
 		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
 			nova_err(sb, "ioremap of the nova image failed(1) regions[%d]\n",i);
