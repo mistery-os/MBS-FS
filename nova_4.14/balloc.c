@@ -276,8 +276,8 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 			free_list->num_blocknode = 1;
 		}
 
-		//nova_dbgv("%s: free list %d: block start %lu, end %lu, "
-		nova_info("%s: free list %d: block start %lu, end %lu, "
+		//nova_info("%s: free list %d: block start %lu, end %lu, "
+		nova_dbgv("%s: free list %d: block start %lu, end %lu, "
 			  "%lu free blocks\n",
 			  __func__, i,
 			  free_list->block_start,

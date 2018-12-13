@@ -1395,7 +1395,7 @@ int nova_snapshot_init_regions(struct super_block *sb)
 	nova_init_header(sb, sih, 0);
 	sih->pi_addr = nova_get_reserved_inode_addr(sb, ino);
 //<<<<<<<<<<<<<<<-nova: assertion failed nova.h:338
-	sih->alter_pi_addr = nova_get_alter_reserved_inode_addr(sb, ino);
+	sih->alter_pi_addr = nova_get_alter_reserved_inode_addr_regions(sb, ino);
 //>>>>>>>>>>>>>>>>>> nova: assertion failed nova.h:338
 	sih->ino = ino;
 	sih->i_blk_type = NOVA_DEFAULT_BLOCK_TYPE;
