@@ -61,8 +61,8 @@ static inline int nova_range_check(struct super_block *sb, void *p,
 				(unsigned long)sbi->virt_addr[0],
 				(unsigned long)(sbi->virt_addr[0] + sbi->initsize),
 				(unsigned long)p, (unsigned long)(p + len));
-		nova_err("%s nid = %d, cpuid = %id, p= 0x%lx, len = 0x%lx\n",__func__,nid,cpuid,
-			(unsigned long)p, (unsigned long)len);
+		nova_err("%s , p= 0x%lx, len = %lu (0x%lx)\n",__func__,
+			(unsigned long)p, (unsigned long)len, (unsigned long)len);
 		dump_stack();
 		return -EINVAL;
 	}
