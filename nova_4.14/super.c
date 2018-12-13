@@ -155,14 +155,14 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	unsigned long mbs_base;
 	unsigned long mbs_size;
 	for (i=0; i < memblock.pram.cnt; i++){
-		mbs_base = memblock.pram.region[i].base;
-		mbs_size = memblock.pram.region[i].size;
+		mbs_base = memblock.pram.regions[i].base;
+		mbs_size = memblock.pram.regions[i].size;
 		mbs_virt_addr[i]=memremap(mbs_base, mbs_size, MEMREMAP_WB);
 		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
 		sbi->virt_addr[i] = mbs_virt_addr[i];
 		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
-			nova_err(sb, "ioremap of the nova image failed(1) region[%d]\n",i);
+			nova_err(sb, "ioremap of the nova image failed(1) regions[%d]\n",i);
 			return -EINVAL;
 		}
 	}
@@ -175,7 +175,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		return -EINVAL;
 	}
 #endif
-	pfn = phys_to_pfn_t(memblock.pram.region[0].base, PFN_DEV);
+	pfn = phys_to_pfn_t(memblock.pram.regions[0].base, PFN_DEV);
 	sbi->phys_addr = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
 	sbi->initsize = size;
@@ -187,7 +187,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	//sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
 #if 1
 	for (i=0; i < memblock.pram.cnt; i++){
-		nova_dbg("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
+		nova_info("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
 				__func__, sbi->s_bdev->bd_disk->disk_name,
 				sbi->phys_addr, (unsigned long)sbi->virt_addr[i], sbi->initsize);
 	}
