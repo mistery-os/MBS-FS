@@ -312,6 +312,7 @@ static inline struct nova_inode *nova_get_reserved_inode(struct super_block *sb,
 
 	addr = nova_get_reserved_inode_addr(sb, inode_number);
 
+	return (struct nova_inode *)(sbi->virt_addr[0] + addr);//YONGSEOB
 	return (struct nova_inode *)(sbi->virt_addr + addr);
 }
 

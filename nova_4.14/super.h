@@ -102,7 +102,7 @@ struct nova_sb_info {
 	 * the pointer to the super block)
 	 */
 	phys_addr_t	phys_addr;
-	void		*virt_addr;
+	void		**virt_addr;//YONGSEOB
 	void		*replica_reserved_inodes_addr;
 	void		*replica_sb_addr;
 
@@ -199,6 +199,7 @@ static inline struct nova_super_block *nova_get_super(struct super_block *sb)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 
+	return (struct nova_super_block *)sbi->virt_addr[0];//YONGSEOB
 	return (struct nova_super_block *)sbi->virt_addr;
 }
 

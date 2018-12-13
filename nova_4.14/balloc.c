@@ -188,7 +188,8 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 			free_list->num_blocknode = 1;
 		}
 
-		nova_dbgv("%s: free list %d: block start %lu, end %lu, "
+		//nova_dbgv("%s: free list %d: block start %lu, end %lu, "
+		nova_info("%s: free list %d: block start %lu, end %lu, "
 			  "%lu free blocks\n",
 			  __func__, i,
 			  free_list->block_start,
@@ -866,7 +867,7 @@ static int nova_new_blocks(struct super_block *sb, unsigned long *blocknr,
 	int retried = 0;
 	INIT_TIMING(alloc_time);
 
-	num_blocks = num * nova_get_numblocks(btype);
+	num_blocks = num * nova_get_numblocks(btype);//블록의 갯수
 	if (num_blocks == 0) {
 		nova_dbg_verbose("%s: num_blocks == 0", __func__);
 		return -EINVAL;

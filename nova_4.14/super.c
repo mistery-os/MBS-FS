@@ -119,15 +119,15 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	void *virt_addr = NULL;
 	void **mbs_virt_addr = NULL;
 	pfn_t __pfn_t;
-	pfn_t **pfn = NULL;
+	pfn_t pfn;
 	long size;
 	struct dax_device *dax_dev;
 	int ret;
 
 	ret = bdev_dax_supported(sb, PAGE_SIZE);//ret = bdev_dax_supported(sb->s_bdev, PAGE_SIZE);
 	nova_dbg_verbose("%s: dax_supported = %d; bdev->super=0x%p",
-			 __func__, ret, sb->s_bdev->bd_super);
-	if (ret) { //if (!ret) {
+			__func__, ret, sb->s_bdev->bd_super);
+	if (ret) { 
 		nova_err(sb, "device does not support DAX\n");
 		return ret;//return -EINVAL;
 	}
@@ -140,9 +140,9 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		return -EINVAL;
 	}
 	sbi->s_dax_dev = dax_dev;
-//4.14 dax_direct_access returns the number of pages
+	//4.14 dax_direct_access returns the number of pages
 	size = dax_direct_access(sbi->s_dax_dev, 0, LONG_MAX/PAGE_SIZE,
-				 &virt_addr, &__pfn_t) * PAGE_SIZE;
+			&virt_addr, &__pfn_t) * PAGE_SIZE;
 	//size = dax_direct_access(dax_dev, 0, LONG_MAX/PAGE_SIZE,
 	//		&virt_addr, &__pfn_t); 
 	size = memblock.pram.total_size;//bytes
@@ -158,27 +158,44 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		mbs_base = memblock.pram.region[i].base;
 		mbs_size = memblock.pram.region[i].size;
 		mbs_virt_addr[i]=memremap(mbs_base, mbs_size, MEMREMAP_WB);
-		pfn[i] = phys_to_pfn_t(mbs_base, PFN_DEV);
+		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
 		sbi->virt_addr[i] = mbs_virt_addr[i];
-		sbi->phys_addr[i] = pfn_t_to_pfn(pfn[i]) << PAGE_SHIFT;
+		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
+		if (!sbi->virt_addr[i]) {
+			nova_err(sb, "ioremap of the nova image failed(1) region[%d]\n",i);
+			return -EINVAL;
+		}
 	}
 #endif
-	//sbi->virt_addr = virt_addr;
+#if 0
+	sbi->virt_addr = virt_addr;
 
 	if (!sbi->virt_addr) {
 		nova_err(sb, "ioremap of the nova image failed(1)\n");
 		return -EINVAL;
 	}
-
+#endif
+	pfn = phys_to_pfn_t(memblock.pram.region[0].base, PFN_DEV);
+	sbi->phys_addr = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
 	sbi->initsize = size;
-	sbi->replica_reserved_inodes_addr = virt_addr + size -
+	sbi->replica_reserved_inodes_addr = mbs_virt_addr[ i - 1 ] + size -
 		(sbi->tail_reserved_blocks << PAGE_SHIFT);
-	sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
+	sbi->replica_sb_addr = mbs_virt_addr[ i - 1 ] + size - PAGE_SIZE;
+	//sbi->replica_reserved_inodes_addr = virt_addr + size -
+	//	(sbi->tail_reserved_blocks << PAGE_SHIFT);
+	//sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
+#if 1
+	for (i=0; i < memblock.pram.cnt; i++){
+		nova_dbg("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
+				__func__, sbi->s_bdev->bd_disk->disk_name,
+				sbi->phys_addr, (unsigned long)sbi->virt_addr[i], sbi->initsize);
+	}
+#endif
+	//nova_dbg("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
+	//		__func__, sbi->s_bdev->bd_disk->disk_name,
+	//		sbi->phys_addr, (unsigned long)sbi->virt_addr, sbi->initsize);
 
-	nova_dbg("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
-			__func__, sbi->s_bdev->bd_disk->disk_name,
-			sbi->phys_addr, (unsigned long)sbi->virt_addr, sbi->initsize);
 
 	return 0;
 }
