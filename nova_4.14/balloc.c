@@ -150,7 +150,6 @@ void nova_free_blocknode(struct nova_range_node *node)
 	nova_free_range_node(node);
 }
 
-
 void nova_init_blockmap(struct super_block *sb, int recovery)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
