@@ -711,10 +711,10 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 				__func__);
 		goto out;
 	}
-nova_info("%s: where are you now?\n",__func__);
 	for (i = 0; i < 8; i++)
 		sbi->zero_csum[i] = nova_crc32c(NOVA_INIT_CSUM,
 				sbi->zeroed_page, strp_size);
+nova_info("%s: where are you now?\n",__func__);
 	sbi->zero_parity = kzalloc(strp_size, GFP_KERNEL);
 
 	if (!sbi->zero_parity) {

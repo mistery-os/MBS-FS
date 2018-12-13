@@ -117,7 +117,7 @@ static int nova_data_csum_init_free_list(struct super_block *sb,
 static int nova_data_parity_init_free_list_regions(struct super_block *sb,
 	struct free_list *free_list)
 {
-	struct nova_sb_info *sbi = NOVA_SB(sb);
+	//struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long blocksize, total_blocks, parity_blocks;
 
 	/* Allocate blocks to store data block parity stripes.
@@ -205,6 +205,7 @@ static void nova_init_free_list_regions(struct super_block *sb,
 	nova_data_csum_init_free_list_regions(sb, free_list);
 	nova_data_parity_init_free_list_regions(sb, free_list);
 }
+#if 0
 static void nova_init_free_list(struct super_block *sb,
 	struct free_list *free_list, int index)
 {
@@ -224,7 +225,7 @@ static void nova_init_free_list(struct super_block *sb,
 	nova_data_csum_init_free_list(sb, free_list);
 	nova_data_parity_init_free_list(sb, free_list);
 }
-
+#endif
 struct nova_range_node *nova_alloc_blocknode(struct super_block *sb)
 {
 	return nova_alloc_range_node(sb);
