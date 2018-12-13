@@ -448,7 +448,9 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	nova_dbgv("max file name len %d\n", (unsigned int)NOVA_NAME_LEN);
 
+	nova_info("%s: before nova_get_super\n",__func__);
 	super = nova_get_super(sb);
+	nova_info("%s: after nova_get_super\n",__func__);
 
 	nova_memunlock_reserved(sb, super);
 	/* clear out super-block and inode table */
