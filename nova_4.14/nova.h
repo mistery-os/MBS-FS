@@ -50,7 +50,8 @@
 #include "nova_def.h"
 #include "stats.h"
 #include "snapshot.h"
-
+#include <linux/memblock.h>
+extern struct memblock memblock;
 #define PAGE_SHIFT_2M 21
 #define PAGE_SHIFT_1G 30
 
@@ -338,6 +339,13 @@ static inline int nova_get_reference(struct super_block *sb, u64 block,
 	return rc;
 }
 #if 1
+static inline u64
+nova_get_addr_off_regions(struct nova_sb_info *sbi, void *addr, int nid)
+{
+	NOVA_ASSERT((addr >= sbi->virt_addr[nid]) &&
+			(addr < (sbi->virt_addr[nid] + memblock.pram.regions[nid].size)));
+	return (u64)(addr - sbi->virt_addr[nid]);
+}
 static inline u64
 nova_get_addr_off(struct nova_sb_info *sbi, void *addr)
 {
