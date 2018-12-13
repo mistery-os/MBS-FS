@@ -276,8 +276,8 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 			free_list->num_blocknode = 1;
 		}
 
-		//nova_dbgv("%s: free list %d: block start %lu, end %lu, "
-		nova_info("%s: free list %d: block start %lu, end %lu, "
+		//nova_info("%s: free list %d: block start %lu, end %lu, "
+		nova_dbgv("%s: free list %d: block start %lu, end %lu, "
 			  "%lu free blocks\n",
 			  __func__, i,
 			  free_list->block_start,
@@ -1075,6 +1075,7 @@ static int nova_new_blocks_regions(struct super_block *sb, unsigned long *blockn
 	unsigned long new_blocknr = 0;
 	long ret_blocks = 0;
 	int retried = 0;
+	int nid = (int)(cpuid/10);
 	INIT_TIMING(alloc_time);
 
 	num_blocks = num * nova_get_numblocks(btype);//한 번에 가져올 블록의 갯수
@@ -1131,9 +1132,9 @@ alloc:
 	}
 
 	if (zero) {
-		bp = nova_get_block(sb, nova_get_block_off(sb,
-						new_blocknr, btype));
-		nova_memunlock_range(sb, bp, PAGE_SIZE * ret_blocks);
+		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
+						new_blocknr, btype), nid);
+		nova_memunlock_range_regions(sb, bp, PAGE_SIZE * ret_blocks,cpuid);
 		memset_nt(bp, 0, PAGE_SIZE * ret_blocks);
 		nova_memlock_range(sb, bp, PAGE_SIZE * ret_blocks);
 	}

@@ -527,6 +527,7 @@ nova_info("%s: where am i (cpus = %d)\n",__func__,i);
 		nova_memlock_range(sb, pair, CACHELINE_SIZE);
 	}
 	PERSISTENT_BARRIER();
+nova_info("%s: where am i (before nova_lite_journal call)\n",__func__);
 	return nova_lite_journal_soft_init_regions(sb);
 }
 int nova_lite_journal_hard_init(struct super_block *sb)
