@@ -150,6 +150,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		nova_err(sb, "direct_access failed\n");
 		return -EINVAL;
 	}
+	nova_info("%s: memblock.pram.total_size\n",__func__);
 #if 1
 	int i;
 	unsigned long mbs_base;
