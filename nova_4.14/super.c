@@ -965,13 +965,13 @@ static void nova_put_super(struct super_block *sb)
 
 	/* It's unmount time, so unmap the nova memory */
 	//	nova_print_free_lists(sb);
-	if (sbi->virt_addr) {
+	if (sbi->virt_addr[0]) {
 		nova_save_snapshots(sb);
 		kmem_cache_free(nova_inode_cachep, sbi->snapshot_si);
 		nova_save_inode_list_to_log(sb);
 		/* Save everything before blocknode mapping! */
 		nova_save_blocknode_mappings_to_log(sb);
-		sbi->virt_addr = NULL;
+		sbi->virt_addr[0] = NULL;
 	}
 
 	nova_delete_free_lists(sb);
