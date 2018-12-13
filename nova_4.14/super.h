@@ -102,7 +102,7 @@ struct nova_sb_info {
 	 * the pointer to the super block)
 	 */
 	phys_addr_t	phys_addr;
-	void		**virt_addr;//YONGSEOB
+	void		*virt_addr[4];//YONGSEOB
 	void		*replica_reserved_inodes_addr;
 	void		*replica_sb_addr;
 
