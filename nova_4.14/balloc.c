@@ -239,9 +239,11 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 	struct free_list *free_list;
 	int i;
 	int ret;
+	int num_blocks=memblock.pram.regions[0].size;
 
 	/* Divide the block range among per-CPU free lists */
-	sbi->per_list_blocks = sbi->num_blocks / sbi->cpus;
+	//sbi->per_list_blocks = sbi->num_blocks / sbi->cpus;
+	sbi->per_list_blocks = num_blocks / 10;//# of cores per node
 	for (i = 0; i < sbi->cpus; i++) {
 		free_list = nova_get_free_list(sb, i);
 		tree = &(free_list->block_free_tree);

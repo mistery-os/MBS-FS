@@ -685,6 +685,15 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 	mutex_init(&sbi->vma_mutex);
 	INIT_LIST_HEAD(&sbi->mmap_sih_list);
 
+	sbi->virt_addr = kcalloc(4, sizeof(void*),
+			GFP_KERNEL);
+	if (!sbi->virt_addr) {
+		retval = -ENOMEM;
+		nova_dbg("%s: Allocating vird_addr failed.",
+				__func__);
+		goto out;
+	}
+
 	sbi->inode_maps = kcalloc(sbi->cpus, sizeof(struct inode_map),
 			GFP_KERNEL);
 	if (!sbi->inode_maps) {
@@ -851,6 +860,9 @@ out:
 
 	kfree(sbi->journal_locks);
 	sbi->journal_locks = NULL;
+
+	kfree(sbi->virt_addr);
+	sbi->virt_addr = NULL;
 
 	kfree(sbi->inode_maps);
 	sbi->inode_maps = NULL;
