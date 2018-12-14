@@ -34,27 +34,24 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	int nid = (int)(cpuid/10);
 	int i;
+	unsigned long nid_size = memblock.pram.regions[nid].size;
 
-nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 	if (p < sbi->virt_addr[nid] ||
-			p + len > sbi->virt_addr[nid] + memblock.pram.regions[nid].size) {
+			p + len > sbi->virt_addr[nid] + nid_size) {
 		nova_err(sb, "access MBS out of range: MBS range 0x%lx - 0x%lx, "
 				"access range 0x%lx - 0x%lx\n",
 				(unsigned long)sbi->virt_addr[nid],
-				(unsigned long)(sbi->virt_addr[nid] + memblock.pram.regions[nid].size),
+				(unsigned long)(sbi->virt_addr[nid] + nid_size),
 				(unsigned long)p, (unsigned long)(p + len));
-		nova_err(sb, "nid = %d, cpuid = %d, p= 0x%lx, len = 0x%lx\n",nid,cpuid,
-			(unsigned long)p, (unsigned long)len);
-		
+#if 0	
 		for(i=0;i<memblock.pram.cnt;i++){
 			nova_err(sb, " sbi->virt_addr[%d]= 0x%lx, size=  0x%lx\n",
 			i,	sbi->virt_addr[i],memblock.pram.regions[i].size);
 		}
-
+#endif
 		dump_stack();
 		return -EINVAL;
 	}
-nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
 
 	return 0;
 }

@@ -511,9 +511,10 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 
 	for (i = 0; i < sbi->cpus; i++) {
 		pair = nova_get_journal_pointers_regions(sb, i);
-
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		allocated = nova_new_log_blocks_regions(sb, &sih, &blocknr, 1,
 			ALLOC_INIT_ZERO, ANY_CPU, ALLOC_FROM_HEAD);
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		nova_dbg_verbose("%s: allocate log @ 0x%lx\n", __func__,
 							blocknr);
 		if (allocated != 1 || blocknr == 0)
@@ -526,7 +527,6 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 		nova_memlock_range(sb, pair, CACHELINE_SIZE);
 	}
 	PERSISTENT_BARRIER();
-nova_info("%s: where am i (before nova_lite_journal call)\n",__func__);
 	return nova_lite_journal_soft_init_regions(sb);
 }
 int nova_lite_journal_hard_init(struct super_block *sb)

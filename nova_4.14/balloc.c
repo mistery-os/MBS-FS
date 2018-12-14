@@ -1127,6 +1127,7 @@ alloc:
 	}
 nova_info("%s: new_blocknr=0x%lx\n",__func__,new_blocknr);
 	if (zero) {
+		//<<<< address translation problems...below
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
