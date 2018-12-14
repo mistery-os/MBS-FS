@@ -1130,7 +1130,7 @@ alloc:
 			  __func__, num, ret_blocks, new_blocknr);
 		return -ENOSPC;
 	}
-
+nova_info("%s: new_blocknr=%lx\n",__func__,new_blocknr);
 	if (zero) {
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
