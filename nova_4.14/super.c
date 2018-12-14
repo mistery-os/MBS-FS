@@ -117,7 +117,6 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	struct nova_sb_info *sbi)
 {
 	void *virt_addr = NULL;
-	//void **mbs_virt_addr = NULL;
 	pfn_t __pfn_t;
 	pfn_t pfn;
 	long size;
@@ -158,7 +157,6 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		mbs_base = memblock.pram.regions[i].base;
 		mbs_size = memblock.pram.regions[i].size;
 		pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
-		//sbi->virt_addr[i] = mbs_virt_addr[i];
 		sbi->virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
 		sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
@@ -431,10 +429,12 @@ static struct nova_inode *nova_init(struct super_block *sb,
 	struct nova_inode_update update;
 	u64 epoch_id;
 	INIT_TIMING(init_time);
+	unsigned long nid_size=memblock.pram.regions[0].size;
 
 	NOVA_START_TIMING(new_init_t, init_time);
 	nova_info("creating an empty nova of size %lu ( 0x%lx ) \n", size,size);
-	sbi->num_blocks = ((unsigned long)(size) >> PAGE_SHIFT);
+	//sbi->num_blocks = ((unsigned long)(size) >> PAGE_SHIFT);
+	sbi->num_blocks = ((unsigned long)(nid_size*4) >> PAGE_SHIFT);
 
 	nova_dbgv("nova: Default block size set to 4K\n");
 	sbi->blocksize = blocksize = NOVA_DEF_BLOCK_SIZE_4K;
