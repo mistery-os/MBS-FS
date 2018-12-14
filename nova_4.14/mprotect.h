@@ -127,8 +127,10 @@ __nova_memlock_range(void *p, unsigned long len)
 static inline void nova_memunlock_range_regions(struct super_block *sb, void *p,
 					 unsigned long len, int cpuid)
 {
+nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 	if (nova_range_check_regions(sb, p, len, cpuid))
 		return;
+nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
 
 	if (nova_is_protected(sb))
 		__nova_memunlock_range(p, len);

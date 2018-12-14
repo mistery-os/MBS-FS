@@ -1132,11 +1132,11 @@ alloc:
 	}
 
 	if (zero) {
-nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
-nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
-		nova_memunlock_range_regions(sb, bp, PAGE_SIZE * ret_blocks,cpuid);
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+		nova_memunlock_range_regions(sb, bp, PAGE_SIZE * ret_blocks, cpuid);
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 		memset_nt(bp, 0, PAGE_SIZE * ret_blocks);
 		nova_memlock_range(sb, bp, PAGE_SIZE * ret_blocks);
 	}
