@@ -1108,6 +1108,8 @@ retry:
 		goto retry;
 	}
 alloc:
+//<<<<<<<<, suspect: new_blocknr >>>>>
+nova_info("%s: num_blocks = %ld\n", __func__, num_blocks);
 	ret_blocks = nova_alloc_blocks_in_free_list_regions(sb, free_list, btype, atype,
 					num_blocks, &new_blocknr, from_tail);
 
@@ -1130,7 +1132,7 @@ alloc:
 			  __func__, num, ret_blocks, new_blocknr);
 		return -ENOSPC;
 	}
-nova_info("%s: new_blocknr=%lx\n",__func__,new_blocknr);
+nova_info("%s: new_blocknr=0x%lx\n",__func__,new_blocknr);
 	if (zero) {
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
