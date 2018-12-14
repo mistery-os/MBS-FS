@@ -62,7 +62,7 @@ void nova_delete_free_lists(struct super_block *sb)
 }
 
 static int nova_data_csum_init_free_list_regions(struct super_block *sb,
-	struct free_list *free_list)
+	struct free_list *free_list, int nid)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long data_csum_blocks;
@@ -71,11 +71,11 @@ static int nova_data_csum_init_free_list_regions(struct super_block *sb,
 	 * each stripe for each page.  We replicate the checksums at the
 	 * beginning and end of per-cpu region that holds the data they cover.
 	 */
-	data_csum_blocks = ((memblock.pram.regions[0].size >> NOVA_STRIPE_SHIFT)
+	data_csum_blocks = ((memblock.pram.regions[nid].size >> NOVA_STRIPE_SHIFT)
 				* NOVA_DATA_CSUM_LEN) >> PAGE_SHIFT;
 	free_list->csum_start = free_list->block_start;
-	free_list->block_start += data_csum_blocks / sbi->cpus;
-	if (data_csum_blocks % sbi->cpus)
+	free_list->block_start += data_csum_blocks / 10;//# of cores per node
+	if (data_csum_blocks % 10) //# of cores per node
 		free_list->block_start++;
 
 	free_list->num_csum_blocks =
@@ -116,7 +116,7 @@ static int nova_data_csum_init_free_list(struct super_block *sb,
 }
 #endif
 static int nova_data_parity_init_free_list_regions(struct super_block *sb,
-	struct free_list *free_list)
+	struct free_list *free_list, int nid)
 {
 	//struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long blocksize, total_blocks, parity_blocks;
@@ -126,14 +126,14 @@ static int nova_data_parity_init_free_list_regions(struct super_block *sb,
 	 * turns it on.
 	 */
 	blocksize = sb->s_blocksize;
-	total_blocks = memblock.pram.regions[0].size / blocksize;
+	total_blocks = memblock.pram.regions[nid].size / blocksize;
 	parity_blocks = total_blocks / (blocksize / NOVA_STRIPE_SIZE + 1);
 	if (total_blocks % (blocksize / NOVA_STRIPE_SIZE + 1))
 		parity_blocks++;
 
 	free_list->parity_start = free_list->block_start;
-	free_list->block_start += parity_blocks / 10;
-	if (parity_blocks % 10)
+	free_list->block_start += parity_blocks / 10;//# of cores per node
+	if (parity_blocks % 10) //# of cores per node
 		free_list->block_start++;
 
 	free_list->num_parity_blocks =
@@ -183,16 +183,7 @@ static void nova_init_free_list_regions(struct super_block *sb,
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long per_list_blocks;
 	int nid=(int)(index/10);
-#if 0
-	if (0 <= index && index < 10)
-		nid = 0;
-	else if ( 10 <= index && index < 20 )
-		nid = 1;
-	else if ( 20 <= index && index < 30 )
-		nid = 2;
-	else if ( 30 <= index && index < 40 )
-		nid = 3;	
-#endif
+
 	per_list_blocks = memblock.pram.regions[nid].size / 10 ;//# of nodes
 
 	free_list->block_start = per_list_blocks * (index % 10);//# of cores/node
@@ -203,8 +194,8 @@ static void nova_init_free_list_regions(struct super_block *sb,
 	if (index == sbi->cpus - 1)
 		free_list->block_end -= sbi->tail_reserved_blocks;
 
-	nova_data_csum_init_free_list_regions(sb, free_list);
-	nova_data_parity_init_free_list_regions(sb, free_list);
+	nova_data_csum_init_free_list_regions(sb, free_list, nid);
+	nova_data_parity_init_free_list_regions(sb, free_list, nid);
 }
 #if 0
 static void nova_init_free_list(struct super_block *sb,
@@ -853,7 +844,6 @@ static long nova_alloc_blocks_in_free_list_regions(struct super_block *sb,
 		curr_blocks = curr->range_high - curr->range_low + 1;
 
 		if (num_blocks >= curr_blocks) {
-nova_info("%s: I'M HERE\n",__func__);
 			/* Superpage allocation must succeed */
 			if (btype > 0 && num_blocks > curr_blocks)
 				goto next;
@@ -883,7 +873,6 @@ nova_info("%s: I'M HERE\n",__func__);
 			found = 1;
 			break;
 		}
-nova_info("%s : I'M THERE\n",__func__);
 
 		/* Allocate partial blocknode */
 		if (from_tail == ALLOC_FROM_HEAD) {

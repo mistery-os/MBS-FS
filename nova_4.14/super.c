@@ -157,10 +157,10 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	for (i=0; i < memblock.pram.cnt; i++){
 		mbs_base = memblock.pram.regions[i].base;
 		mbs_size = memblock.pram.regions[i].size;
-		//pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
+		pfn = phys_to_pfn_t(mbs_base, PFN_DEV);
 		//sbi->virt_addr[i] = mbs_virt_addr[i];
 		sbi->virt_addr[i] = memremap(mbs_base, mbs_size, MEMREMAP_WB);
-		//sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
+		sbi->phys_addr[i] = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 		if (!sbi->virt_addr[i]) {
 			nova_err(sb, "ioremap of the nova image failed(1) regions[%d]\n",i);
 			return -EINVAL;
@@ -175,8 +175,6 @@ static int nova_get_nvmm_info(struct super_block *sb,
 		return -EINVAL;
 	}
 #endif
-	pfn = phys_to_pfn_t(memblock.pram.regions[0].base, PFN_DEV);
-	sbi->phys_addr = pfn_t_to_pfn(pfn) << PAGE_SHIFT;
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
 	sbi->initsize = size;
 	mbs_size = memblock.pram.regions[3].size;
@@ -190,7 +188,7 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	for (i=0; i < memblock.pram.cnt; i++){
 		nova_info("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
 				__func__, sbi->s_bdev->bd_disk->disk_name,
-				sbi->phys_addr, (unsigned long)sbi->virt_addr[i], sbi->initsize);
+				sbi->phys_addr[i], (unsigned long)sbi->virt_addr[i], sbi->initsize);
 	}
 #endif
 	//nova_dbg("%s: dev %s, phys_addr 0x%llx, virt_addr 0x%lx, size %ld\n",
@@ -470,6 +468,7 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	nova_init_blockmap(sb, 0);
 
+//--------->> still nova error..
 	//if (nova_lite_journal_hard_init(sb) < 0) {
 	if (nova_lite_journal_hard_init_regions(sb) < 0) {
 		nova_err(sb, "Lite journal hard initialization failed\n");
