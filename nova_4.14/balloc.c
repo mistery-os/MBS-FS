@@ -187,7 +187,7 @@ static void nova_init_free_list_regions(struct super_block *sb,
 
 	per_list_blocks =size / 10 ;//# of nodes
 nova_info("%s : index= %d, nid = %d, size= 0x%lx (%d) , er_list_blocks = 0x%lx ( %d )\n",
-		inedx, nid, size, size,
+		index, nid, size, size,
 		per_list_blocks, per_list_blocks);
 	free_list->block_start = per_list_blocks * (index % 10);//# of cores/node
 	free_list->block_end = free_list->block_start +
