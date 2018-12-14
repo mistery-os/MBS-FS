@@ -325,7 +325,7 @@ if (nid == 0)
 	return block ? ((void *)ps + block) : NULL;
 else
 #endif
-	nova_info("%s: virt_addr + block = 0x%lx\n",(unsigned long)(sbi->virt_addr[nid] + block));
+	nova_info("%s: virt_addr + block = 0x%llx\n",(unsigned long)(sbi->virt_addr[nid] + block));
 	return block ? ((void *)(sbi->virt_addr[nid] + block) ) : NULL;
 }
 static inline void *nova_get_block(struct super_block *sb, u64 block)
