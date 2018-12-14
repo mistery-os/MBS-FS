@@ -157,7 +157,8 @@ static int nova_update_entry_pfn(struct super_block *sb,
 	NOVA_START_TIMING(update_pfn_t, update_time);
 
 	addr = vma->vm_start + ((start_pgoff - vma->vm_pgoff) << PAGE_SHIFT);
-	pfn = nova_get_pfn(sb, entry->block) + start_pgoff - entry->pgoff;
+	//pfn = nova_get_pfn(sb, entry->block) + start_pgoff - entry->pgoff;
+	pfn = nova_get_pfn_regions(sb, entry->block, 0) + start_pgoff - entry->pgoff;
 	size = num_pages << PAGE_SHIFT;
 
 	nova_dbgv("%s: addr 0x%lx, size 0x%lx\n", __func__,

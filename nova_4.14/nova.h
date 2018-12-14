@@ -652,11 +652,16 @@ nova_get_blocknr(struct super_block *sb, u64 block, unsigned short btype)
 	return block >> PAGE_SHIFT;
 }
 
+static inline unsigned long nova_get_pfn_regions(struct super_block *sb, u64 block, int nid)
+{
+	return (NOVA_SB(sb)->phys_addr[nid] + block) >> PAGE_SHIFT;
+}
+#if 0
 static inline unsigned long nova_get_pfn(struct super_block *sb, u64 block)
 {
 	return (NOVA_SB(sb)->phys_addr + block) >> PAGE_SHIFT;
 }
-
+#endif
 static inline u64 next_log_page(struct super_block *sb, u64 curr)
 {
 	struct nova_inode_log_page *curr_page;

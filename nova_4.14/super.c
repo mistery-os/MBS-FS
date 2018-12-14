@@ -758,7 +758,8 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 	}
 
 	nova_dbg_verbose("checking physical address 0x%016llx for nova image\n",
-			(u64)sbi->phys_addr);
+			(u64)sbi->phys_addr[0]);
+			//(u64)sbi->phys_addr);
 
 	if (nova_check_integrity(sb) < 0) {
 		retval = -EINVAL;
