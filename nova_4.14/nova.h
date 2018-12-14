@@ -319,12 +319,12 @@ static inline void *nova_get_block_regions(struct super_block *sb, u64 block,
 		int nid)
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
-#if 0
+//#if 0
 	struct nova_super_block *ps = nova_get_super_regions(sb, nid);
 if (nid == 0)
 	return block ? ((void *)ps + block) : NULL;
 else
-#endif
+//#endif
 	nova_info("%s: virt_addr= 0x%lx,   block = 0x%lx\n",
 			__func__,(unsigned long)(sbi->virt_addr[nid]),
 		      (unsigned long)block);
