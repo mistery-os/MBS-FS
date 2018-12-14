@@ -186,9 +186,9 @@ static void nova_init_free_list_regions(struct super_block *sb,
 	unsigned long num_blocks = memblock.pram.regions[nid].size >> PAGE_SHIFT;
 
 	per_list_blocks = num_blocks / 10 ;//# of nodes
-nova_info("%s : index= %d, nid = %d, num_blocks= 0x%lx (%ld) , per_list_blocks = 0x%lx (%ld)\n",
-		__func__,index, nid, num_blocks, num_blocks,
-		per_list_blocks, per_list_blocks);
+//nova_info("%s : index= %d, nid = %d, num_blocks= 0x%lx (%ld) , per_list_blocks = 0x%lx (%ld)\n",
+//		__func__,index, nid, num_blocks, num_blocks,
+//		per_list_blocks, per_list_blocks);
 	free_list->block_start = per_list_blocks * (index % 10);//# of cores/node
 	free_list->block_end = free_list->block_start +
 					per_list_blocks - 1;
@@ -270,8 +270,8 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 			free_list->num_blocknode = 1;
 		}
 
-		//nova_dbgv("%s: free list %d: block start %lu, end %lu, "
-		nova_info("%s: free list %d: block start 0x%016lx, end 0x%016lx, "
+		//nova_info("%s: free list %d: block start 0x%016lx, end 0x%016lx, "
+		nova_dbgv("%s: free list %d: block start %lu, end %lu, "
 			  "0x%016lx free blocks\n",
 			  __func__, i,
 			  free_list->block_start,
