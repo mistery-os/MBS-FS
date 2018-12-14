@@ -326,7 +326,7 @@ if (nid == 0)
 else
 #endif
 	nova_info("%s: virt_addr= 0x%lx,   block = 0x%lx\n",
-			__func__,(unsigned long)(sbi->virt_addr[nid]),  block));
+			__func__,(unsigned long)(sbi->virt_addr[nid]),  block);
 	return block ? ((void *)(sbi->virt_addr[nid] + block) ) : NULL;
 }
 static inline void *nova_get_block(struct super_block *sb, u64 block)
