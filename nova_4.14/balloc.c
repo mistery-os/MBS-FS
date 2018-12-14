@@ -183,11 +183,11 @@ static void nova_init_free_list_regions(struct super_block *sb,
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long per_list_blocks;
 	int nid=(int)(index/10);
-	unsigned long size=memblock.pram.regions[nid].size ;
+	unsigned long num_blocks = memblock.pram.regions[nid].size >> PAGE_SHIFT;
 
-	per_list_blocks =size / 10 ;//# of nodes
-nova_info("%s : index= %d, nid = %d, size= 0x%lx (%ld) , er_list_blocks = 0x%lx (%ld)\n",
-		__func__,index, nid, size, size,
+	per_list_blocks = num_blocks / 10 ;//# of nodes
+nova_info("%s : index= %d, nid = %d, num_blocks= 0x%lx (%ld) , per_list_blocks = 0x%lx (%ld)\n",
+		__func__,index, nid, num_blocks, num_blocks,
 		per_list_blocks, per_list_blocks);
 	free_list->block_start = per_list_blocks * (index % 10);//# of cores/node
 	free_list->block_end = free_list->block_start +
