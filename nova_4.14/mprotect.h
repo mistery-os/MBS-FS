@@ -47,7 +47,7 @@ nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 			(unsigned long)p, (unsigned long)len);
 		
 		for(i=0;i<memblock.pram.cnt;i++){
-			nova_info("%s: sbi->virt_addr[%d]= 0x%lx, size=  0x%lx\n",
+			nova_info("%s: sbi->virt_addr[%d]= 0x%lx, size=  0x%ux\n",
 					__func__,
 					sbi->virt_addr[i],memblock.pram.regions[i].size);
 		}
