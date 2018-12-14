@@ -43,6 +43,8 @@ struct journal_ptr_pair *nova_get_journal_pointers_regions(struct super_block *s
 		BUG();
 
 	return (struct journal_ptr_pair *)((char *)nova_get_block_regions(sb,
+		NOVA_DEF_BLOCK_SIZE_4K * JOURNAL_START, 0 ) + cpu * CACHELINE_SIZE);
+	return (struct journal_ptr_pair *)((char *)nova_get_block_regions(sb,
 		NOVA_DEF_BLOCK_SIZE_4K * JOURNAL_START, nid ) + index * CACHELINE_SIZE);
 }
 static inline

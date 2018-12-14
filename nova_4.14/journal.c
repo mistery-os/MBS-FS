@@ -87,6 +87,28 @@ static inline u64 next_lite_journal(u64 curr_p)
 }
 
 // Walk the journal for one CPU, and verify the checksum on each entry.
+static int nova_check_journal_entries_regions(struct super_block *sb,
+	struct journal_ptr_pair *pair)
+{
+	struct nova_lite_journal_entry *entry;
+	u64 temp;
+	int ret;
+
+	temp = pair->journal_head;
+	while (temp != pair->journal_tail) {
+		entry = (struct nova_lite_journal_entry *)nova_get_block_regions(sb,
+									temp,0);
+		ret = nova_check_entry_integrity(sb, entry);
+		if (ret) {
+			nova_dbg("Entry %p checksum failure\n", entry);
+			nova_print_lite_transaction(entry);
+			return ret;
+		}
+		temp = next_lite_journal(temp);
+	}
+
+	return 0;
+}
 static int nova_check_journal_entries(struct super_block *sb,
 	struct journal_ptr_pair *pair)
 {
@@ -141,7 +163,25 @@ static void nova_undo_journal_entry(struct super_block *sb,
 	*(u64 *)nova_get_block(sb, addr) = (u64)value;
 	nova_flush_buffer((void *)nova_get_block(sb, addr), CACHELINE_SIZE, 0);
 }
+static void nova_undo_lite_journal_entry_regions(struct super_block *sb,
+	struct nova_lite_journal_entry *entry)
+{
+	u64 type;
 
+	type = le64_to_cpu(entry->type);
+
+	switch (type) {
+	case JOURNAL_INODE:
+		nova_undo_journal_inode(sb, entry);
+		break;
+	case JOURNAL_ENTRY:
+		nova_undo_journal_entry(sb, entry);
+		break;
+	default:
+		nova_dbg("%s: unknown data type %llu\n", __func__, type);
+		break;
+	}
+}
 static void nova_undo_lite_journal_entry(struct super_block *sb,
 	struct nova_lite_journal_entry *entry)
 {
@@ -163,6 +203,27 @@ static void nova_undo_lite_journal_entry(struct super_block *sb,
 }
 
 /* Roll back all journal enries */
+static int nova_recover_lite_journal_regions(struct super_block *sb,
+	struct journal_ptr_pair *pair)
+{
+	struct nova_lite_journal_entry *entry;
+	u64 temp;
+
+	nova_memunlock_journal(sb);
+	temp = pair->journal_head;
+	while (temp != pair->journal_tail) {
+		entry = (struct nova_lite_journal_entry *)nova_get_block_regions(sb,
+									temp,0);
+		nova_undo_lite_journal_entry(sb, entry);
+		temp = next_lite_journal(temp);
+	}
+
+	pair->journal_tail = pair->journal_head;
+	nova_memlock_journal(sb);
+	nova_flush_buffer(&pair->journal_head, CACHELINE_SIZE, 1);
+
+	return 0;
+}
 static int nova_recover_lite_journal(struct super_block *sb,
 	struct journal_ptr_pair *pair)
 {
@@ -477,7 +538,8 @@ int nova_lite_journal_soft_init(struct super_block *sb)
 		spin_lock_init(&sbi->journal_locks[i]);
 
 	for (i = 0; i < sbi->cpus; i++) {
-		pair = nova_get_journal_pointers(sb, i);
+		//pair = nova_get_journal_pointers(sb, i);
+		pair = nova_get_journal_pointers_regions(sb, i);
 		if (pair->journal_head == pair->journal_tail)
 			continue;
 
@@ -510,8 +572,8 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 	sih.i_blk_type = NOVA_BLOCK_TYPE_4K;
 
 	for (i = 0; i < sbi->cpus; i++) {
-		pair = nova_get_journal_pointers(sb, i);
-		//pair = nova_get_journal_pointers_regions(sb, i);
+		//pair = nova_get_journal_pointers(sb, i);
+		pair = nova_get_journal_pointers_regions(sb, i);
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		allocated = nova_new_log_blocks_regions(sb, &sih, &blocknr, 1,
 			ALLOC_INIT_ZERO, ANY_CPU, ALLOC_FROM_HEAD);

@@ -174,11 +174,11 @@ static int nova_get_nvmm_info(struct super_block *sb,
 	}
 #endif
 	//sbi->phys_addr = pfn_t_to_pfn(__pfn_t) << PAGE_SHIFT;
+	size = mbs_size = memblock.pram.regions[0].size;
 	sbi->initsize = size;
-	mbs_size = memblock.pram.regions[3].size;
-	sbi->replica_reserved_inodes_addr = sbi->virt_addr[ 3 ] + mbs_size -
+	sbi->replica_reserved_inodes_addr = sbi->virt_addr[ 0 ] + mbs_size -
 		(sbi->tail_reserved_blocks << PAGE_SHIFT);
-	sbi->replica_sb_addr = sbi->virt_addr[ 3 ] + mbs_size - PAGE_SIZE;
+	sbi->replica_sb_addr = sbi->virt_addr[ 0 ] + mbs_size - PAGE_SIZE;
 	//sbi->replica_reserved_inodes_addr = virt_addr + size -
 	//	(sbi->tail_reserved_blocks << PAGE_SHIFT);
 	//sbi->replica_sb_addr = virt_addr + size - PAGE_SIZE;
@@ -433,8 +433,8 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	NOVA_START_TIMING(new_init_t, init_time);
 	nova_info("creating an empty nova of size %lu ( 0x%lx ) \n", size,size);
-	//sbi->num_blocks = ((unsigned long)(size) >> PAGE_SHIFT);
-	sbi->num_blocks = ((unsigned long)(nid_size*4) >> PAGE_SHIFT);
+	sbi->num_blocks = ((unsigned long)(size) >> PAGE_SHIFT);
+//	sbi->num_blocks = ((unsigned long)(nid_size*4) >> PAGE_SHIFT);
 
 	nova_dbgv("nova: Default block size set to 4K\n");
 	sbi->blocksize = blocksize = NOVA_DEF_BLOCK_SIZE_4K;
@@ -768,7 +768,7 @@ static int nova_fill_super(struct super_block *sb, void *data, int silent)
 		goto out;
 	}
 
-	if (nova_lite_journal_soft_init(sb)) {
+	if (nova_lite_journal_soft_init(sb)) {//더 봐봐
 		retval = -EINVAL;
 		nova_err(sb, "Lite journal initialization failed\n");
 		goto out;
