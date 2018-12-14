@@ -1130,6 +1130,7 @@ nova_info("%s: new_blocknr=0x%lx\n",__func__,new_blocknr);
 		//<<<< address translation problems...below
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
+nova_info("%s: bp=0x%lx\n",__func__,(unsigned long)bp);
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 		nova_memunlock_range_regions(sb, bp, PAGE_SIZE * ret_blocks, cpuid);
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
