@@ -1132,8 +1132,10 @@ alloc:
 	}
 
 	if (zero) {
+nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 		bp = nova_get_block_regions(sb, nova_get_block_off(sb,
 						new_blocknr, btype), nid);
+nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
 		nova_memunlock_range_regions(sb, bp, PAGE_SIZE * ret_blocks,cpuid);
 		memset_nt(bp, 0, PAGE_SIZE * ret_blocks);
 		nova_memlock_range(sb, bp, PAGE_SIZE * ret_blocks);
@@ -1263,10 +1265,10 @@ int nova_new_log_blocks_regions(struct super_block *sb,
 	INIT_TIMING(alloc_time);
 
 	NOVA_START_TIMING(new_log_blocks_t, alloc_time);
-nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<	
 	allocated = nova_new_blocks_regions(sb, blocknr, num,
 			    sih->i_blk_type, zero, LOG, cpu, from_tail);
-nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	NOVA_END_TIMING(new_log_blocks_t, alloc_time);
 	if (allocated < 0) {
 		nova_dbgv("%s: ino %lu, failed to alloc %d log blocks",
