@@ -512,17 +512,14 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 	for (i = 0; i < sbi->cpus; i++) {
 		pair = nova_get_journal_pointers_regions(sb, i);
 
-nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 		allocated = nova_new_log_blocks_regions(sb, &sih, &blocknr, 1,
 			ALLOC_INIT_ZERO, ANY_CPU, ALLOC_FROM_HEAD);
-nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
 		nova_dbg_verbose("%s: allocate log @ 0x%lx\n", __func__,
 							blocknr);
 		if (allocated != 1 || blocknr == 0)
 			return -ENOSPC;
 
 		block = nova_get_block_off(sb, blocknr, NOVA_BLOCK_TYPE_4K);
-nova_info("%s: where am i (cpus = %d)\n",__func__,i);
 		nova_memunlock_range_regions(sb, pair, CACHELINE_SIZE,i);
 		pair->journal_head = pair->journal_tail = block;
 		nova_flush_buffer(pair, CACHELINE_SIZE, 0);
