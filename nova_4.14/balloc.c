@@ -64,7 +64,7 @@ void nova_delete_free_lists(struct super_block *sb)
 static int nova_data_csum_init_free_list_regions(struct super_block *sb,
 	struct free_list *free_list, int nid)
 {
-	struct nova_sb_info *sbi = NOVA_SB(sb);
+	//struct nova_sb_info *sbi = NOVA_SB(sb);
 	unsigned long data_csum_blocks;
 
 	/* Allocate pages to hold data checksums.  We store one checksum for
@@ -267,9 +267,9 @@ void nova_init_blockmap(struct super_block *sb, int recovery)
 			free_list->num_blocknode = 1;
 		}
 
-		//nova_info("%s: free list %d: block start %lu, end %lu, "
-		nova_dbgv("%s: free list %d: block start %lu, end %lu, "
-			  "%lu free blocks\n",
+		//nova_dbgv("%s: free list %d: block start %lu, end %lu, "
+		nova_info("%s: free list %d: block start 0x%016llx, end 0x%016llx, "
+			  "0x%016llx free blocks\n",
 			  __func__, i,
 			  free_list->block_start,
 			  free_list->block_end,
