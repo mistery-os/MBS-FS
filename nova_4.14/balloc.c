@@ -853,6 +853,7 @@ static long nova_alloc_blocks_in_free_list_regions(struct super_block *sb,
 		curr_blocks = curr->range_high - curr->range_low + 1;
 
 		if (num_blocks >= curr_blocks) {
+nova_info("%s: I'M HERE\n",__func__);
 			/* Superpage allocation must succeed */
 			if (btype > 0 && num_blocks > curr_blocks)
 				goto next;
@@ -882,6 +883,7 @@ static long nova_alloc_blocks_in_free_list_regions(struct super_block *sb,
 			found = 1;
 			break;
 		}
+nova_info("%s : I'M THERE\n",__func_);
 
 		/* Allocate partial blocknode */
 		if (from_tail == ALLOC_FROM_HEAD) {
@@ -1109,7 +1111,6 @@ retry:
 	}
 alloc:
 //<<<<<<<<, suspect: new_blocknr >>>>>
-nova_info("%s: num_blocks = %ld\n", __func__, num_blocks);
 	ret_blocks = nova_alloc_blocks_in_free_list_regions(sb, free_list, btype, atype,
 					num_blocks, &new_blocknr, from_tail);
 
