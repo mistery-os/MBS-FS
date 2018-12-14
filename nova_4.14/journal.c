@@ -510,7 +510,9 @@ int nova_lite_journal_hard_init_regions(struct super_block *sb)
 	sih.i_blk_type = NOVA_BLOCK_TYPE_4K;
 
 	for (i = 0; i < sbi->cpus; i++) {
+nova_info("%s: where am I, HERE suspect nova_lite_journal_hard_init_regions\n",__func__);
 		pair = nova_get_journal_pointers_regions(sb, i);
+nova_info("%s: where am I, HERE\n",__func__);
 
 		allocated = nova_new_log_blocks_regions(sb, &sih, &blocknr, 1,
 			ALLOC_INIT_ZERO, ANY_CPU, ALLOC_FROM_HEAD);

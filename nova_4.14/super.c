@@ -470,13 +470,11 @@ static struct nova_inode *nova_init(struct super_block *sb,
 
 	nova_init_blockmap(sb, 0);
 
-nova_info("%s: where am I, HERE before nova_lite_journal_hard_init_regions\n",__func__);
 	//if (nova_lite_journal_hard_init(sb) < 0) {
 	if (nova_lite_journal_hard_init_regions(sb) < 0) {
 		nova_err(sb, "Lite journal hard initialization failed\n");
 		return ERR_PTR(-EINVAL);
 	}
-nova_info("%s: where am I, HERE\n",__func__);
 	if (nova_init_inode_inuse_list(sb) < 0)
 		return ERR_PTR(-EINVAL);
 
