@@ -33,19 +33,29 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	int nid = (int)(cpuid/10);
+	int i;
 
+nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
 	if (p < sbi->virt_addr[nid] ||
 			p + len > sbi->virt_addr[nid] + memblock.pram.regions[nid].size) {
-		nova_err(sb, "access pmem out of range: pmem range 0x%lx - 0x%lx, "
+		nova_err(sb, "access MBS out of range: MBS range 0x%lx - 0x%lx, "
 				"access range 0x%lx - 0x%lx\n",
 				(unsigned long)sbi->virt_addr[nid],
 				(unsigned long)(sbi->virt_addr[nid] + memblock.pram.regions[nid].size),
 				(unsigned long)p, (unsigned long)(p + len));
-		nova_err(sb, "nid = %d, cpuid = %id, p= 0x%lx, len = 0x%lx\n",nid,cpuid,
+		nova_err(sb, "nid = %d, cpuid = %d, p= 0x%lx, len = 0x%lx\n",nid,cpuid,
 			(unsigned long)p, (unsigned long)len);
+		
+		for(i=0;i<memblock.pram.cnt;i++){
+			nova_info("%s: sbi->virt_addr[%d]= 0x%lx, size=  0x%lx",
+					__func__,
+					sbi->virt_addr[i],memblock.pram.regions[i].size);
+		}
+
 		dump_stack();
 		return -EINVAL;
 	}
+nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
 
 	return 0;
 }
@@ -61,8 +71,6 @@ static inline int nova_range_check(struct super_block *sb, void *p,
 				(unsigned long)sbi->virt_addr[0],
 				(unsigned long)(sbi->virt_addr[0] + sbi->initsize),
 				(unsigned long)p, (unsigned long)(p + len));
-		nova_info("%s , p= 0x%lx, len = %lu (0x%lx)\n",__func__,
-			(unsigned long)p, (unsigned long)len, (unsigned long)len);
 		dump_stack();
 		return -EINVAL;
 	}
@@ -127,10 +135,10 @@ __nova_memlock_range(void *p, unsigned long len)
 static inline void nova_memunlock_range_regions(struct super_block *sb, void *p,
 					 unsigned long len, int cpuid)
 {
-nova_info("%s: where am I, <<<<<<<<HERE suspect====== HERE  == \n",__func__);
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	if (nova_range_check_regions(sb, p, len, cpuid))
 		return;
-nova_info("%s: where am I, >>>>>>>>>>HERE\n",__func__);
+//>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	if (nova_is_protected(sb))
 		__nova_memunlock_range(p, len);
