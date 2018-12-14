@@ -33,7 +33,6 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 {
 	struct nova_sb_info *sbi = NOVA_SB(sb);
 	int nid = (int)(cpuid/10);
-	int i;
 	unsigned long nid_size = memblock.pram.regions[nid].size;
 
 	if (p < sbi->virt_addr[nid] ||
@@ -44,6 +43,7 @@ static inline int nova_range_check_regions(struct super_block *sb, void *p,
 				(unsigned long)(sbi->virt_addr[nid] + nid_size),
 				(unsigned long)p, (unsigned long)(p + len));
 #if 0	
+	int i;
 		for(i=0;i<memblock.pram.cnt;i++){
 			nova_err(sb, " sbi->virt_addr[%d]= 0x%lx, size=  0x%lx\n",
 			i,	sbi->virt_addr[i],memblock.pram.regions[i].size);
