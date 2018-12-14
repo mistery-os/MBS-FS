@@ -883,7 +883,7 @@ nova_info("%s: I'M HERE\n",__func__);
 			found = 1;
 			break;
 		}
-nova_info("%s : I'M THERE\n",__func_);
+nova_info("%s : I'M THERE\n",__func__);
 
 		/* Allocate partial blocknode */
 		if (from_tail == ALLOC_FROM_HEAD) {
