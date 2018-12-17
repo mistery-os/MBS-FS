@@ -392,6 +392,7 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 	if (PageTransHuge(page))
 		return -ENOTSUPP;
 	err = mbs_do_bvec(mbs, page, PAGE_SIZE, 0, is_write, sector);
+	if (err == 0)
 	page_endio(page, is_write, err);
 	return err;
 }

@@ -392,6 +392,7 @@ static int mbs_rw_page(struct block_device *bdev, sector_t sector,
 	if (PageTransHuge(page))
 		return -ENOTSUPP;
 	err = mbs_do_bvec(mbs, page, PAGE_SIZE, 0, is_write, sector);
+	if ( err == 0)
 	page_endio(page, is_write, err);
 	return err;
 }
@@ -460,6 +461,7 @@ static long mbs_dax_direct_access(struct dax_device *dax_dev,
 static size_t mbs_dax_copy_from_iter(struct dax_device *dax_dev, pgoff_t pgoff,
 		void *addr, size_t bytes, struct iov_iter *i)
 {
+	return copy_from_iter_flushcache(addr, bytes, i);//pmem.c
 	return copy_from_iter(addr, bytes, i);
 }
 
