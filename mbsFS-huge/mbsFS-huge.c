@@ -2087,7 +2087,7 @@ unsigned long mbsfs_get_unmapped_area(struct file *file,
 	get_area = current->mm->get_unmapped_area;
 	addr = get_area(file, uaddr, len, pgoff, flags);
 
-	//if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))
+	if (!IS_ENABLED(CONFIG_TRANSPARENT_HUGE_PAGECACHE))//20190102 20:12
 	return addr;
 	if (IS_ERR_VALUE(addr))
 		return addr;
@@ -4369,6 +4369,13 @@ static int __init mbsfs_init(void)
 		goto out1;
 	}
 	pr_debug("mbsfs_init suceessed.\n");
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+	if (has_transparent_hugepage() && mbsFS_huge > MBS_HUGE_DENY)
+		MBS_SB(shm_mnt->mnt_sb)->huge = mbsFS_huge;
+	else
+		mbsFS_huge = 0; /* just in case it was patched */
+#endif
+
 	return 0;
 out1:
 	mbsfs_destroy_inodecache();
