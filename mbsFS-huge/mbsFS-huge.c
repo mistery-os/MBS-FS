@@ -1391,7 +1391,7 @@ static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 		info->swapped++;
 		spin_unlock_irq(&info->lock);
 
-		swap_shmem_alloc(swap);
+		swap_mbsfs_alloc(swap);
 		mbsFS_delete_from_page_cache(page, swp_to_radix_entry(swap));
 
 		mutex_unlock(&mbsFS_swaplist_mutex);
@@ -3960,6 +3960,11 @@ static int mbsfs_show_options(struct seq_file *seq, struct dentry *root)
 	if (!gid_eq(sbinfo->gid, GLOBAL_ROOT_GID))
 		seq_printf(seq, ",gid=%u",
 				from_kgid_munged(&init_user_ns, sbinfo->gid));
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+	/* Rightly or wrongly, show huge mount option unmasked by mbsFS_huge */
+	if (sbinfo->huge)
+		seq_printf(seq, ",huge=%s", mbsfs_format_huge(sbinfo->huge));
+#endif
 	mbsfs_show_mpol(seq, sbinfo->mpol);
 	return 0;
 }
@@ -4302,6 +4307,10 @@ static const struct super_operations mbsfs_ops = {
 	.alloc_inode	= mbsfs_alloc_inode,			//rNO
 	.destroy_inode	= mbsfs_destroy_inode,			//rNO
 	.evict_inode	= mbsfs_evict_inode,			//rNO
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+	.nr_cached_objects	= mbsfs_unused_huge_count,
+	.free_cached_objects	= mbsfs_unused_huge_scan,
+#endif
 };
 
 static const struct vm_operations_struct mbsfs_vm_ops = {
