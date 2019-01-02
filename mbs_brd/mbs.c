@@ -521,7 +521,7 @@ static struct mbs_device *mbs_alloc(int i)
 	struct mbs_device *mbs;
 	struct gendisk *disk;
 	//int nid = memblock.pram.regions[i].nid;
-	//void *addr;
+	void *addr;
 
 	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
 	if (!mbs)
