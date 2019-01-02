@@ -3830,6 +3830,17 @@ static int mbsfs_parse_options(char *options, struct mbsfs_sb_info *sbinfo,
 			sbinfo->gid = make_kgid(current_user_ns(), gid);
 			if (!gid_valid(sbinfo->gid))
 				goto bad_val;
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
+		} else if (!strcmp(this_char, "huge")) {
+			int huge;
+			huge = mbsfs_parse_huge(value);
+			if (huge < 0)
+				goto bad_val;
+			if (!has_transparent_hugepage() &&
+					huge != MBS_HUGE_NEVER)
+				goto bad_val;
+			sbinfo->huge = huge;
+#endif
 #ifdef CONFIG_NUMA
 		} else if (!strcmp(this_char,"flag")) {
 			mpol_put_pram(mpol);
