@@ -40,7 +40,7 @@ struct mbsfs_inode_info {
 #if 1 // enable huge-page 20190102 19:42
 	struct list_head      shrinklist;     /* shrinkable hpage inodes */
 	struct list_head	swaplist;	/* chain of maybes on swap */
-	struct shared_policy	policy;		/* NUSA memory alloc policy */
+//	struct shared_policy	policy;		/* NUSA memory alloc policy */
 #endif
 	struct mbsfs_policy	policy;		/* NUSA memory alloc policy */
 	struct simple_xattrs	xattrs;		/* list of xattrs */
