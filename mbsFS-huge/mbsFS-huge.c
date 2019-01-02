@@ -460,10 +460,167 @@ static bool mbsFS_confirm_swap(struct address_space *mapping,
 #define MBS_HUGE_DENY	(-1)
 #define MBS_HUGE_FORCE	(-2)
 
+#ifdef CONFIG_TRANSPARENT_HUGE_PAGECACHE
 int mbsFS_huge __read_mostly;
+
+#if defined(CONFIG_SYSFS) || defined(CONFIG_TMPFS)
+static int mbsfs_parse_huge(const char *str)
+{
+	if (!strcmp(str, "never"))
+		return MBS_HUGE_NEVER;
+	if (!strcmp(str, "always"))
+		return MBS_HUGE_ALWAYS;
+	if (!strcmp(str, "within_size"))
+		return MBS_HUGE_WITHIN_SIZE;
+	if (!strcmp(str, "advise"))
+		return MBS_HUGE_ADVISE;
+	if (!strcmp(str, "deny"))
+		return MBS_HUGE_DENY;
+	if (!strcmp(str, "force"))
+		return MBS_HUGE_FORCE;
+	return -EINVAL;
+}
+
+static const char *mbsfs_format_huge(int huge)
+{
+	switch (huge) {
+	case MBS_HUGE_NEVER:
+		return "never";
+	case MBS_HUGE_ALWAYS:
+		return "always";
+	case MBS_HUGE_WITHIN_SIZE:
+		return "within_size";
+	case MBS_HUGE_ADVISE:
+		return "advise";
+	case MBS_HUGE_DENY:
+		return "deny";
+	case MBS_HUGE_FORCE:
+		return "force";
+	default:
+		VM_BUG_ON(1);
+		return "bad_val";
+	}
+}
+#endif
+
+static unsigned long mbsfs_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
+		struct shrink_control *sc, unsigned long nr_to_split)
+{
+	LIST_HEAD(list), *pos, *next;
+	LIST_HEAD(to_remove);
+	struct inode *inode;
+	struct mbsfs_inode_info *info;
+	struct page *page;
+	unsigned long batch = sc ? sc->nr_to_scan : 128;
+	int removed = 0, split = 0;
+
+	if (list_empty(&sbinfo->shrinklist))
+		return SHRINK_STOP;
+
+	spin_lock(&sbinfo->shrinklist_lock);
+	list_for_each_safe(pos, next, &sbinfo->shrinklist) {
+		info = list_entry(pos, struct mbsfs_inode_info, shrinklist);
+
+		/* pin the inode */
+		inode = igrab(&info->vfs_inode);
+
+		/* inode is about to be evicted */
+		if (!inode) {
+			list_del_init(&info->shrinklist);
+			removed++;
+			goto next;
+		}
+
+		/* Check if there's anything to gain */
+		if (round_up(inode->i_size, PAGE_SIZE) ==
+				round_up(inode->i_size, HPAGE_PMD_SIZE)) {
+			list_move(&info->shrinklist, &to_remove);
+			removed++;
+			goto next;
+		}
+
+		list_move(&info->shrinklist, &list);
+next:
+		if (!--batch)
+			break;
+	}
+	spin_unlock(&sbinfo->shrinklist_lock);
+
+	list_for_each_safe(pos, next, &to_remove) {
+		info = list_entry(pos, struct mbsfs_inode_info, shrinklist);
+		inode = &info->vfs_inode;
+		list_del_init(&info->shrinklist);
+		iput(inode);
+	}
+
+	list_for_each_safe(pos, next, &list) {
+		int ret;
+
+		info = list_entry(pos, struct mbsfs_inode_info, shrinklist);
+		inode = &info->vfs_inode;
+
+		if (nr_to_split && split >= nr_to_split) {
+			iput(inode);
+			continue;
+		}
+
+		page = find_lock_page(inode->i_mapping,
+				(inode->i_size & HPAGE_PMD_MASK) >> PAGE_SHIFT);
+		if (!page)
+			goto drop;
+
+		if (!PageTransHuge(page)) {
+			unlock_page(page);
+			put_page(page);
+			goto drop;
+		}
+
+		ret = split_huge_page(page);
+		unlock_page(page);
+		put_page(page);
+
+		if (ret) {
+			/* split failed: leave it on the list */
+			iput(inode);
+			continue;
+		}
+
+		split++;
+drop:
+		list_del_init(&info->shrinklist);
+		removed++;
+		iput(inode);
+	}
+
+	spin_lock(&sbinfo->shrinklist_lock);
+	list_splice_tail(&list, &sbinfo->shrinklist);
+	sbinfo->shrinklist_len -= removed;
+	spin_unlock(&sbinfo->shrinklist_lock);
+
+	return split;
+}
+
+static long mbsfs_unused_huge_scan(struct super_block *sb,
+		struct shrink_control *sc)
+{
+	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
+
+	if (!READ_ONCE(sbinfo->shrinklist_len))
+		return SHRINK_STOP;
+
+	return mbsfs_unused_huge_shrink(sbinfo, sc, 0);
+}
+
+static long mbsfs_unused_huge_count(struct super_block *sb,
+		struct shrink_control *sc)
+{
+	struct mbsfs_sb_info *sbinfo = MBS_SB(sb);
+	return READ_ONCE(sbinfo->shrinklist_len);
+}
+
+#else
 #define mbsFS_huge MBS_HUGE_DENY
-#if 0
-static unsigned long mbsFS_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
+static unsigned long mbsfs_unused_huge_shrink(struct mbsfs_sb_info *sbinfo,
 		struct shrink_control *sc, unsigned long nr_to_split)
 {
 	return 0;
@@ -1519,7 +1676,7 @@ repeat:
 	if (radix_tree_exceptional_entry(page)) {
 	   /* swap = radix_to_swp_entry(page); */
 	   page = NULL;
-	   goto alloc_nohuge;
+//	   goto alloc_nohuge;//2019.01.02 19:25
 	}
 	   
 	if (mbstype <= MBS_CACHE &&
@@ -1667,7 +1824,7 @@ alloc_huge:
 alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					index, false);
 		}
-#if 0
+#if 1 //2019.01.02 19:26 enable huge
 		if (IS_ERR(page)) {
 			int retry = 5;
 			error = PTR_ERR(page);
@@ -1680,7 +1837,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 			 */
 			while (retry--) {
 				int ret;
-				ret = mbsFS_unused_huge_shrink(sbinfo, NULL, 1);
+				ret = mbsfs_unused_huge_shrink(sbinfo, NULL, 1);
 				if (ret == SHRINK_STOP)
 					break;
 				if (ret)
@@ -1696,12 +1853,12 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 
 		if (mbstype == MBS_WRITE)
 			__SetPageReferenced(page);
-//#if 0
+#if 1
 		error = mem_cgroup_try_charge(page, charge_mm, gfp, &memcg,
 				PageTransHuge(page));
 		if (error)
 			goto unacct;
-//#endif
+#endif
 		error = radix_tree_maybe_preload_order(gfp & GFP_RECLAIM_MASK,
 				compound_order(page));
 		if (!error) {
@@ -1714,10 +1871,10 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					PageTransHuge(page));
 			goto unacct;
 		}
-//#if 0
+#if 1
 		mem_cgroup_commit_charge(page, memcg, false,
 				PageTransHuge(page));
-//#endif
+#endif
 		lru_cache_add_anon(page);	//	mm/swap.c
 
 		spin_lock_irq(&info->lock);
