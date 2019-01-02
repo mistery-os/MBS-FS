@@ -1948,7 +1948,7 @@ clear:
 	 */
 unacct:
 	mbsfs_inode_unacct_blocks(inode, 1 << compound_order(page));
-#if 0
+#if 1
 	if (PageTransHuge(page)) {
 		unlock_page(page);
 		put_page(page);
