@@ -407,14 +407,14 @@ static long __mbs_direct_access(struct mbs_device *mbs, pgoff_t pgoff,
 	int order=0;
 	if (!mbs)
 		return -ENODEV;
-//#if 0
+#if 1
 	page = mbs_insert_pages(mbs, (sector_t)pgoff << PAGE_SECTORS_SHIFT, order);
 	if (!page)
 		return -ENOSPC;
 	*kaddr = page_address(page);
 	*pfn = page_to_pfn_t(page);
 	return 1;
-//#endif
+#endif
 	//pr_info("caller function name is: %pf callee function name is:%s\n",
 	//	      	__builtin_return_address(0),__func__);
 #if 0
@@ -540,16 +540,16 @@ static struct mbs_device *mbs_alloc(int i)
 	//mbs->mbs_queue = blk_alloc_queue_node(GFP_KERNEL, nid);
 	if (!mbs->mbs_queue)
 		goto out_free_dev;
-#ifdef MAPPERDAX_DIRECT
-	/*
+//#ifdef MAPPERDAX_DIRECT
+//	/*
 	mbs->pfn_flags = PFN_DEV;
 	addr = memremap(mbs->phys_addr, mbs->size, MEMREMAP_WB);
 	if (IS_ERR(addr))
 		goto out;
 		//return PTR_ERR(addr);
 	mbs->virt_addr = addr;
-	*/
-#endif
+//	*/
+//#endif
 
 	blk_queue_make_request(mbs->mbs_queue, mbs_make_request);
 	//blk_queue_max_hw_sectors(mbs->mbs_queue, 1024);
