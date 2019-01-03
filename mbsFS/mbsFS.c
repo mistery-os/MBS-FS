@@ -137,7 +137,6 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //####################
 //####################
 //####################
-#if 0
 static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 		unsigned long addr, unsigned long len, unsigned long pgoff,
 		unsigned long flags)
@@ -152,6 +151,7 @@ hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 {
 	return ERR_PTR(-ENOSYS);
 }
+#if 0
 #endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
@@ -2957,6 +2957,8 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
+#endif
+
 static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
@@ -3088,7 +3090,6 @@ out:
 	inode_unlock(inode);
 	return error;
 }
-#endif
 
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
@@ -4077,8 +4078,8 @@ static const struct file_operations mbsfs_file_operations = {
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.llseek		= generic_file_llseek,
-	//.fallocate	= mbsfs_fallocate,
-	//.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
+	.fallocate	= mbsfs_fallocate,
+	.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
 };
 
 static const struct inode_operations mbsfs_inode_operations = {
