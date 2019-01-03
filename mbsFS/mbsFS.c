@@ -144,6 +144,7 @@ static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 	return current->mm->get_unmapped_area(file, addr, len, pgoff, flags);
 }
 
+#if 0
 static inline struct file *
 hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 		struct user_struct **user, int creat_flags,
@@ -151,7 +152,6 @@ hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 {
 	return ERR_PTR(-ENOSYS);
 }
-#if 0
 #endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
