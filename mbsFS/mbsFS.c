@@ -1248,7 +1248,9 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	mutex_unlock(&mbsfs_swaplist_mutex);
 #endif
 free_swap:
+#if 0
 	put_swap_page(page, swap);
+#endif
 redirty:
 	set_page_dirty(page);
 	if (wbc->for_reclaim)
@@ -1378,14 +1380,14 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	if (1)
 		huge = false;
 	nr = huge ? HPAGE_PMD_NR : 1;
-//#if 0
+#if 1
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
 	if (huge)
 		page = mbsFS_alloc_hugepage(gfp, info, index);
 	else
-//#endif
+#endif
 		page = mbsfs_alloc_page(gfp, info, index);
 	if (page) {
 		//__SetPageLocked(page);
@@ -1698,12 +1700,12 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 
 		if (mbstype == MBS_WRITE)
 			__SetPageReferenced(page);
-//#if 0
+#if 1
 		error = mem_cgroup_try_charge(page, charge_mm, gfp, &memcg,
 				PageTransHuge(page));
 		if (error)
 			goto unacct;
-//#endif
+#endif
 		error = radix_tree_maybe_preload_order(gfp & GFP_RECLAIM_MASK,
 				compound_order(page));
 		if (!error) {
@@ -1716,10 +1718,10 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					PageTransHuge(page));
 			goto unacct;
 		}
-//#if 0
+#if 1
 		mem_cgroup_commit_charge(page, memcg, false,
 				PageTransHuge(page));
-//#endif
+#endif
 		lru_cache_add_anon(page);	//	mm/swap.c
 
 		spin_lock_irq(&info->lock);
@@ -1728,7 +1730,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 		mbsfs_recalc_inode(inode);
 		spin_unlock_irq(&info->lock);
 		alloced = true;
-#if 0
+#if 1
 		if (PageTransHuge(page) &&
 				DIV_ROUND_UP(i_size_read(inode), PAGE_SIZE) <
 				hindex + HPAGE_PMD_NR - 1) {
