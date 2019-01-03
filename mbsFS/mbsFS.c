@@ -1225,6 +1225,7 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	 * we've incremented swapped, because mbsFS_unuse_inode() will
 	 * prune a !swapped inode from the swaplist under this mutex.
 	 */
+#if 0
 	mutex_lock(&mbsfs_swaplist_mutex);
 	if (list_empty(&info->swaplist))
 		list_add_tail(&info->swaplist, &mbsFS_swaplist);
@@ -1245,6 +1246,7 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	}
 
 	mutex_unlock(&mbsfs_swaplist_mutex);
+#endif
 free_swap:
 	put_swap_page(page, swap);
 redirty:
