@@ -2961,6 +2961,7 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
+#endif
 static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
@@ -3092,7 +3093,6 @@ out:
 	inode_unlock(inode);
 	return error;
 }
-#endif
 
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
@@ -3101,7 +3101,7 @@ static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 	buf->f_type = dentry->d_sb->s_magic;//MBSFS_MAGIC;
 	buf->f_bsize = PAGE_SIZE;
 	buf->f_namelen = NAME_MAX;
-	//#if 0								//rNO
+	#if 1								//rNO
 	if (sbinfo->max_blocks) {
 		buf->f_blocks = sbinfo->max_blocks;
 		buf->f_bavail =
@@ -3113,7 +3113,7 @@ static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 		buf->f_ffree = sbinfo->free_inodes;
 	}
 	/* else leave those fields 0 like simple_statfs */
-	//#endif							//rNO
+	#endif							//rNO
 	return 0;
 }
 
@@ -4081,7 +4081,7 @@ static const struct file_operations mbsfs_file_operations = {
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.llseek		= generic_file_llseek,
-	//.fallocate	= mbsfs_fallocate,
+	.fallocate	= mbsfs_fallocate,
 	//.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
 };
 
