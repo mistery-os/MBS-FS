@@ -137,6 +137,7 @@ extern struct page *mbsfs__page_cache_alloc(gfp_t gfp);
 //####################
 //####################
 //####################
+#if 0
 static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 		unsigned long addr, unsigned long len, unsigned long pgoff,
 		unsigned long flags)
@@ -144,7 +145,6 @@ static unsigned long mbsfs_mmu_get_unmapped_area(struct file *file,
 	return current->mm->get_unmapped_area(file, addr, len, pgoff, flags);
 }
 
-#if 0
 static inline struct file *
 hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 		struct user_struct **user, int creat_flags,
@@ -155,7 +155,7 @@ hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 #endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
- * mbsfs_fallocate communicates with mbsfs_fault or mbsfs_writepage via
+ * mbsfs_fallocate communicates with mbsfs_fault or mbsFS_writepage via
  * inode->i_private (with i_mutex making sure that it has only one user at
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
@@ -301,10 +301,10 @@ bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
 	return vma->vm_ops == &mbsfs_vm_ops;
 }
-#endif
 
 static LIST_HEAD(mbsFS_swaplist);
-static DEFINE_MUTEX(mbsfs_swaplist_mutex);
+static DEFINE_MUTEX(mbsFS_swaplist_mutex);
+#endif
 
 static int mbsfs_reserve_inode(struct super_block *sb)
 {
@@ -522,7 +522,7 @@ static int mbsfs_add_to_page_cache(struct page *page,
 	if (!error) {
 		mapping->nrpages += nr;
 		if (PageTransHuge(page))
-			//__inc_node_page_state(page, NR_SHMEM_THPS);
+			__inc_node_page_state(page, NR_SHMEM_THPS);
 		//__mod_node_page_state(page_pgdat(page), NR_FILE_PAGES, nr);
 		//__mod_node_page_state(page_pgdat(page), NR_SHMEM, nr);
 		spin_unlock_irq(&mapping->tree_lock);
@@ -972,9 +972,9 @@ static void mbsfs_evict_inode(struct inode *inode)
 			spin_unlock(&sbinfo->shrinklist_lock);
 		}
 		if (!list_empty(&info->swaplist)) {
-			mutex_lock(&mbsfs_swaplist_mutex);
+			mutex_lock(&mbsFS_swaplist_mutex);
 			list_del_init(&info->swaplist);
-			mutex_unlock(&mbsfs_swaplist_mutex);
+			mutex_unlock(&mbsFS_swaplist_mutex);
 		}
 #endif
 	}
@@ -1038,9 +1038,9 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 
 	gfp = mapping_gfp_mask(mapping);
 	if (mbsFS_should_replace_page(*pagep, gfp)) {
-		mutex_unlock(&mbsfs_swaplist_mutex);
+		mutex_unlock(&mbsFS_swaplist_mutex);
 		error = mbsFS_replace_page(pagep, gfp, info, index);
-		mutex_lock(&mbsfs_swaplist_mutex);
+		mutex_lock(&mbsFS_swaplist_mutex);
 		/*
 		 * We needed to drop mutex to make that restrictive page
 		 * allocation, but the inode might have been freed while we
@@ -1064,7 +1064,7 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 	}
 
 	/*
-	 * We rely on mbsfs_swaplist_mutex, not only to protect the swaplist,
+	 * We rely on mbsFS_swaplist_mutex, not only to protect the swaplist,
 	 * but also to hold up mbsfs_evict_inode(): so inode cannot be freed
 	 * beneath us (pagelock doesn't help until the page is in pagecache).
 	 */
@@ -1108,7 +1108,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 
 	/*
 	 * Charge page using GFP_KERNEL while we can wait, before taking
-	 * the mbsfs_swaplist_mutex which might hold up mbsfs_writepage().
+	 * the mbsFS_swaplist_mutex which might hold up mbsFS_writepage().
 	 * Charged back to the user (not to caller) when swap account is used.
 	 */
 	error = mem_cgroup_try_charge(page, current->mm, GFP_KERNEL, &memcg,
@@ -1118,7 +1118,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 	/* No radix_tree_preload: swap entry keeps a place for page in tree */
 	error = -EAGAIN;
 
-	mutex_lock(&mbsfs_swaplist_mutex);
+	mutex_lock(&mbsFS_swaplist_mutex);
 	list_for_each_safe(this, next, &mbsFS_swaplist) {
 		info = list_entry(this, struct mbsfs_inode_info, swaplist);
 		if (info->swapped)
@@ -1130,7 +1130,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 			break;
 		/* found nothing in this: move on to search the next */
 	}
-	mutex_unlock(&mbsfs_swaplist_mutex);
+	mutex_unlock(&mbsFS_swaplist_mutex);
 
 	if (error) {
 		if (error != -ENOMEM)
@@ -1143,13 +1143,12 @@ out:
 	put_page(page);
 	return error;
 }
-#endif
 
 /*
  * Move the page from the page cache to the swap cache.
  */
 
-static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
+static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 {
 	struct mbsfs_inode_info *info;
 	struct address_space *mapping;
@@ -1170,7 +1169,7 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 
 	/*
 	 * Our capabilities prevent regular writeback or sync from ever calling
-	 * mbsfs_writepage; but a stacking filesystem might use ->writepage of
+	 * mbsFS_writepage; but a stacking filesystem might use ->writepage of
 	 * its underlying filesystem, in which case mbsfs should write out to
 	 * swap only in response to memory pressure, and not for the writeback
 	 * threads or sync.
@@ -1193,18 +1192,18 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	 */
 	if (!PageUptodate(page)) {
 		if (inode->i_private) {
-			struct mbsfs_falloc *mbsfs_falloc;
+			struct mbsFS_falloc *mbsFS_falloc;
 			spin_lock(&inode->i_lock);
-			mbsfs_falloc = inode->i_private;
-			if (mbsfs_falloc &&
-					!mbsfs_falloc->waitq &&
-					index >= mbsfs_falloc->start &&
-					index < mbsfs_falloc->next)
-				mbsfs_falloc->nr_unswapped++;
+			mbsFS_falloc = inode->i_private;
+			if (mbsFS_falloc &&
+					!mbsFS_falloc->waitq &&
+					index >= mbsFS_falloc->start &&
+					index < mbsFS_falloc->next)
+				mbsFS_falloc->nr_unswapped++;
 			else
-				mbsfs_falloc = NULL;
+				mbsFS_falloc = NULL;
 			spin_unlock(&inode->i_lock);
-			if (mbsfs_falloc)
+			if (mbsFS_falloc)
 				goto redirty;
 		}
 		clear_highpage(page);
@@ -1225,8 +1224,7 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	 * we've incremented swapped, because mbsFS_unuse_inode() will
 	 * prune a !swapped inode from the swaplist under this mutex.
 	 */
-#if 0
-	mutex_lock(&mbsfs_swaplist_mutex);
+	mutex_lock(&mbsFS_swaplist_mutex);
 	if (list_empty(&info->swaplist))
 		list_add_tail(&info->swaplist, &mbsFS_swaplist);
 
@@ -1239,18 +1237,15 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 		swap_shmem_alloc(swap);
 		mbsFS_delete_from_page_cache(page, swp_to_radix_entry(swap));
 
-		mutex_unlock(&mbsfs_swaplist_mutex);
+		mutex_unlock(&mbsFS_swaplist_mutex);
 		BUG_ON(page_mapped(page));
 		swap_writepage(page, wbc);
 		return 0;
 	}
 
-	mutex_unlock(&mbsfs_swaplist_mutex);
-#endif
+	mutex_unlock(&mbsFS_swaplist_mutex);
 free_swap:
-#if 0
 	put_swap_page(page, swap);
-#endif
 redirty:
 	set_page_dirty(page);
 	if (wbc->for_reclaim)
@@ -1258,6 +1253,7 @@ redirty:
 	unlock_page(page);
 	return 0;
 }
+#endif
 static void mbsfs_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
@@ -1358,6 +1354,10 @@ static struct page *mbsfs_alloc_page(gfp_t gfp,
 	//page = alloc_pram_vma(gfp, &pvma, 0); 
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
+	//page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS,
+	//	       	numa_node_id(), LOCAL);
+	//page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS,
+	//	       	numa_node_id(), INTERLEAVE);
 	//page = alloc_prams_vma2(gfp, 0, &pvma, ORDERS, numa_node_id(), LOCAL);
 	page = alloc_prams_vma_pram_policy(gfp, 0, &pvma, ORDERS, numa_node_id(), false);
 	//page = alloc_prams_vma(gfp, 0, &pvma, 0, nd, false);
@@ -1380,14 +1380,14 @@ static struct page *mbsfs_alloc_and_acct_page(gfp_t gfp,
 	if (1)
 		huge = false;
 	nr = huge ? HPAGE_PMD_NR : 1;
-#if 1
+//#if 0
 	if (!mbsFS_inode_acct_block(inode, nr))
 		goto failed;
 
 	if (huge)
 		page = mbsFS_alloc_hugepage(gfp, info, index);
 	else
-#endif
+//#endif
 		page = mbsfs_alloc_page(gfp, info, index);
 	if (page) {
 		//__SetPageLocked(page);
@@ -1700,12 +1700,12 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 
 		if (mbstype == MBS_WRITE)
 			__SetPageReferenced(page);
-#if 1
+//#if 0
 		error = mem_cgroup_try_charge(page, charge_mm, gfp, &memcg,
 				PageTransHuge(page));
 		if (error)
 			goto unacct;
-#endif
+//#endif
 		error = radix_tree_maybe_preload_order(gfp & GFP_RECLAIM_MASK,
 				compound_order(page));
 		if (!error) {
@@ -1718,10 +1718,10 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 					PageTransHuge(page));
 			goto unacct;
 		}
-#if 1
+//#if 0
 		mem_cgroup_commit_charge(page, memcg, false,
 				PageTransHuge(page));
-#endif
+//#endif
 		lru_cache_add_anon(page);	//	mm/swap.c
 
 		spin_lock_irq(&info->lock);
@@ -1730,7 +1730,7 @@ alloc_nohuge:		page = mbsfs_alloc_and_acct_page(gfp, inode,
 		mbsfs_recalc_inode(inode);
 		spin_unlock_irq(&info->lock);
 		alloced = true;
-#if 1
+#if 0
 		if (PageTransHuge(page) &&
 				DIV_ROUND_UP(i_size_read(inode), PAGE_SIZE) <
 				hindex + HPAGE_PMD_NR - 1) {
@@ -1795,17 +1795,15 @@ clear:
 	 */
 unacct:
 	mbsfs_inode_unacct_blocks(inode, 1 << compound_order(page));
-#if 1
+#if 0
 	if (PageTransHuge(page)) {
 		unlock_page(page);
 		put_page(page);
 		goto alloc_nohuge;
 	}
 failed:
-#if 0
 	if (swap.val && !mbsFS_confirm_swap(mapping, index, swap))
 		error = -EEXIST;
-#endif
 #endif
 unlock:
 	if (page) {
@@ -1862,15 +1860,15 @@ static int mbsfs_fault(struct vm_fault *vmf)
 	 * and bloating every mbsFS inode for this unlikely case would be sad.
 	 */
 	if (unlikely(inode->i_private)) {
-		struct mbsfs_falloc *mbsfs_falloc;
+		struct mbsfs_falloc *mbsFS_falloc;
 
 		spin_lock(&inode->i_lock);
-		mbsfs_falloc = inode->i_private;
-		if (mbsfs_falloc &&
-				mbsfs_falloc->waitq &&
-				vmf->pgoff >= mbsfs_falloc->start &&
-				vmf->pgoff < mbsfs_falloc->next) {
-			wait_queue_head_t *mbsfs_falloc_waitq;
+		mbsFS_falloc = inode->i_private;
+		if (mbsFS_falloc &&
+				mbsFS_falloc->waitq &&
+				vmf->pgoff >= mbsFS_falloc->start &&
+				vmf->pgoff < mbsFS_falloc->next) {
+			wait_queue_head_t *mbsFS_falloc_waitq;
 			DEFINE_WAIT_FUNC(mbsFS_fault_wait, synchronous_wake_function);
 
 			ret = VM_FAULT_NOPAGE;
@@ -1881,21 +1879,21 @@ static int mbsfs_fault(struct vm_fault *vmf)
 				ret = VM_FAULT_RETRY;
 			}
 
-			mbsfs_falloc_waitq = mbsfs_falloc->waitq;
-			prepare_to_wait(mbsfs_falloc_waitq, &mbsFS_fault_wait,
+			mbsFS_falloc_waitq = mbsFS_falloc->waitq;
+			prepare_to_wait(mbsFS_falloc_waitq, &mbsFS_fault_wait,
 					TASK_UNINTERRUPTIBLE);
 			spin_unlock(&inode->i_lock);
 			schedule();
 
 			/*
-			 * mbsfs_falloc_waitq points into the mbsfs_fallocate()
-			 * stack of the hole-punching task: mbsfs_falloc_waitq
+			 * mbsFS_falloc_waitq points into the mbsfs_fallocate()
+			 * stack of the hole-punching task: mbsFS_falloc_waitq
 			 * is usually invalid by the time we reach here, but
 			 * finish_wait() does not dereference it in that case;
 			 * though i_lock needed lest racing with wake_up_all().
 			 */
 			spin_lock(&inode->i_lock);
-			finish_wait(mbsfs_falloc_waitq, &mbsFS_fault_wait);
+			finish_wait(mbsFS_falloc_waitq, &mbsFS_fault_wait);
 			spin_unlock(&inode->i_lock);
 			return ret;
 		}
@@ -1916,6 +1914,8 @@ static int mbsfs_fault(struct vm_fault *vmf)
 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
 	return ret;
 }
+#if 0
+#endif
 unsigned long mbsfs_get_unmapped_area(struct file *file,
 		unsigned long uaddr, unsigned long len,
 		unsigned long pgoff, unsigned long flags)
@@ -2275,7 +2275,7 @@ ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	return ret;
 }
 //EXPORT_SYMBOL(mbsFS_file_write_iter);
-#if 1
+#if 0
 int mbsfs_readpage(struct file *file, struct page *page)
 {
 	clear_highpage(page);
@@ -2284,8 +2284,6 @@ int mbsfs_readpage(struct file *file, struct page *page)
 	unlock_page(page);
 	return 0;
 }
-#endif
-#if 0
 static inline struct page *
 mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
@@ -2404,11 +2402,11 @@ mbsfs_write_begin(struct file *file, struct address_space *mapping,
 		struct page **pagep, void **fsdata)
 {
 	struct inode *inode = mapping->host;
-	struct mbsfs_inode_info *info = MBS_I(inode);
+	//struct mbsfs_inode_info *info = MBS_I(inode);
 	pgoff_t index = pos >> PAGE_SHIFT;
 
 	/* i_mutex is held by caller */
-#if 1
+#if 0
 	if (unlikely(info->seals & (F_SEAL_WRITE | F_SEAL_GROW))) {
 		if (info->seals & F_SEAL_WRITE)
 			return -EPERM;
@@ -2741,7 +2739,7 @@ static loff_t mbsfs_file_llseek(struct file *file, loff_t offset, int whence)
 	inode_unlock(inode);
 	return offset;
 }
-#if 1
+#if 0
 /*
  * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
  * so reuse a tag which we firmly believe is never set or cleared on mbsFS.
@@ -2963,15 +2961,13 @@ long mbsFS_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	return error;
 }
-#endif
-
 static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		loff_t len)
 {
 	struct inode *inode = file_inode(file);
 	struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
 	struct mbsfs_inode_info *info = MBS_I(inode);
-	struct mbsfs_falloc mbsfs_falloc;
+	struct mbsfs_falloc mbsFS_falloc;
 	pgoff_t start, index, end;
 	int error;
 
@@ -2984,7 +2980,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		struct address_space *mapping = file->f_mapping;
 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
-		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(mbsfs_falloc_waitq);
+		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(mbsFS_falloc_waitq);
 
 		/* protected by i_mutex */
 		if (info->seals & F_SEAL_WRITE) {
@@ -2992,11 +2988,11 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 			goto out;
 		}
 
-		mbsfs_falloc.waitq = &mbsfs_falloc_waitq;
-		mbsfs_falloc.start = unmap_start >> PAGE_SHIFT;
-		mbsfs_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
+		mbsFS_falloc.waitq = &mbsFS_falloc_waitq;
+		mbsFS_falloc.start = unmap_start >> PAGE_SHIFT;
+		mbsFS_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
 		spin_lock(&inode->i_lock);
-		inode->i_private = &mbsfs_falloc;
+		inode->i_private = &mbsFS_falloc;
 		spin_unlock(&inode->i_lock);
 
 		if ((u64)unmap_end > (u64)unmap_start)
@@ -3007,8 +3003,8 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 
 		spin_lock(&inode->i_lock);
 		inode->i_private = NULL;
-		wake_up_all(&mbsfs_falloc_waitq);
-		WARN_ON_ONCE(!list_empty(&mbsfs_falloc_waitq.head));
+		wake_up_all(&mbsFS_falloc_waitq);
+		WARN_ON_ONCE(!list_empty(&mbsFS_falloc_waitq.head));
 		spin_unlock(&inode->i_lock);
 		error = 0;
 		goto out;
@@ -3032,13 +3028,13 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		goto out;
 	}
 
-	mbsfs_falloc.waitq = NULL;
-	mbsfs_falloc.start = start;
-	mbsfs_falloc.next  = start;
-	mbsfs_falloc.nr_falloced = 0;
-	mbsfs_falloc.nr_unswapped = 0;
+	mbsFS_falloc.waitq = NULL;
+	mbsFS_falloc.start = start;
+	mbsFS_falloc.next  = start;
+	mbsFS_falloc.nr_falloced = 0;
+	mbsFS_falloc.nr_unswapped = 0;
 	spin_lock(&inode->i_lock);
-	inode->i_private = &mbsfs_falloc;
+	inode->i_private = &mbsFS_falloc;
 	spin_unlock(&inode->i_lock);
 
 	for (index = start; index < end; index++) {
@@ -3050,7 +3046,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		 */
 		if (signal_pending(current))
 			error = -EINTR;
-		else if (mbsfs_falloc.nr_unswapped > mbsfs_falloc.nr_falloced)
+		else if (mbsFS_falloc.nr_unswapped > mbsFS_falloc.nr_falloced)
 			error = -ENOMEM;
 		else
 			error = mbsfs_getpage(inode, index, &page, MBS_FALLOC);
@@ -3065,12 +3061,12 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		}
 
 		/*
-		 * Inform mbsfs_writepage() how far we have reached.
+		 * Inform mbsFS_writepage() how far we have reached.
 		 * No need for lock or barrier: we have the page lock.
 		 */
-		mbsfs_falloc.next++;
+		mbsFS_falloc.next++;
 		if (!PageUptodate(page))
-			mbsfs_falloc.nr_falloced++;
+			mbsFS_falloc.nr_falloced++;
 
 		/*
 		 * If !PageUptodate, leave it that way so that freeable pages
@@ -3096,6 +3092,7 @@ out:
 	inode_unlock(inode);
 	return error;
 }
+#endif
 
 static int mbsfs_statfs(struct dentry *dentry, struct kstatfs *buf)
 {
@@ -4063,11 +4060,11 @@ static void mbsfs_destroy_inodecache(void)
 }
 
 static const struct address_space_operations mbsfs_aops = {
-	.writepage	= mbsfs_writepage,
+	//.writepage	= mbsFS_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
-	.readpage	= mbsfs_readpage,		//tNO
+	//.readpage	= mbsfs_readpage,		//tNO
 #ifdef CONFIG_MIGRATION
 	.migratepage	= migrate_page,
 #endif
@@ -4084,8 +4081,8 @@ static const struct file_operations mbsfs_file_operations = {
 	.splice_read	= generic_file_splice_read,
 	.splice_write	= iter_file_splice_write,
 	.llseek		= generic_file_llseek,
-	.fallocate	= mbsfs_fallocate,
-	.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
+	//.fallocate	= mbsfs_fallocate,
+	//.get_unmapped_area = mbsfs_mmu_get_unmapped_area,	//tNO
 };
 
 static const struct inode_operations mbsfs_inode_operations = {
