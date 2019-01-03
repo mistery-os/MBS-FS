@@ -1802,8 +1802,10 @@ unacct:
 		goto alloc_nohuge;
 	}
 failed:
+#if 0
 	if (swap.val && !mbsFS_confirm_swap(mapping, index, swap))
 		error = -EEXIST;
+#endif
 #endif
 unlock:
 	if (page) {
