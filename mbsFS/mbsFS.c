@@ -1193,18 +1193,18 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	 */
 	if (!PageUptodate(page)) {
 		if (inode->i_private) {
-			struct mbsFS_falloc *mbsFS_falloc;
+			struct mbsfs_falloc *mbsfs_falloc;
 			spin_lock(&inode->i_lock);
-			mbsFS_falloc = inode->i_private;
-			if (mbsFS_falloc &&
-					!mbsFS_falloc->waitq &&
-					index >= mbsFS_falloc->start &&
-					index < mbsFS_falloc->next)
-				mbsFS_falloc->nr_unswapped++;
+			mbsfs_falloc = inode->i_private;
+			if (mbsfs_falloc &&
+					!mbsfs_falloc->waitq &&
+					index >= mbsfs_falloc->start &&
+					index < mbsfs_falloc->next)
+				mbsfs_falloc->nr_unswapped++;
 			else
-				mbsFS_falloc = NULL;
+				mbsfs_falloc = NULL;
 			spin_unlock(&inode->i_lock);
-			if (mbsFS_falloc)
+			if (mbsfs_falloc)
 				goto redirty;
 		}
 		clear_highpage(page);
@@ -1856,15 +1856,15 @@ static int mbsfs_fault(struct vm_fault *vmf)
 	 * and bloating every mbsFS inode for this unlikely case would be sad.
 	 */
 	if (unlikely(inode->i_private)) {
-		struct mbsfs_falloc *mbsFS_falloc;
+		struct mbsfs_falloc *mbsfs_falloc;
 
 		spin_lock(&inode->i_lock);
-		mbsFS_falloc = inode->i_private;
-		if (mbsFS_falloc &&
-				mbsFS_falloc->waitq &&
-				vmf->pgoff >= mbsFS_falloc->start &&
-				vmf->pgoff < mbsFS_falloc->next) {
-			wait_queue_head_t *mbsFS_falloc_waitq;
+		mbsfs_falloc = inode->i_private;
+		if (mbsfs_falloc &&
+				mbsfs_falloc->waitq &&
+				vmf->pgoff >= mbsfs_falloc->start &&
+				vmf->pgoff < mbsfs_falloc->next) {
+			wait_queue_head_t *mbsfs_falloc_waitq;
 			DEFINE_WAIT_FUNC(mbsFS_fault_wait, synchronous_wake_function);
 
 			ret = VM_FAULT_NOPAGE;
@@ -1875,21 +1875,21 @@ static int mbsfs_fault(struct vm_fault *vmf)
 				ret = VM_FAULT_RETRY;
 			}
 
-			mbsFS_falloc_waitq = mbsFS_falloc->waitq;
-			prepare_to_wait(mbsFS_falloc_waitq, &mbsFS_fault_wait,
+			mbsfs_falloc_waitq = mbsfs_falloc->waitq;
+			prepare_to_wait(mbsfs_falloc_waitq, &mbsFS_fault_wait,
 					TASK_UNINTERRUPTIBLE);
 			spin_unlock(&inode->i_lock);
 			schedule();
 
 			/*
-			 * mbsFS_falloc_waitq points into the mbsfs_fallocate()
-			 * stack of the hole-punching task: mbsFS_falloc_waitq
+			 * mbsfs_falloc_waitq points into the mbsfs_fallocate()
+			 * stack of the hole-punching task: mbsfs_falloc_waitq
 			 * is usually invalid by the time we reach here, but
 			 * finish_wait() does not dereference it in that case;
 			 * though i_lock needed lest racing with wake_up_all().
 			 */
 			spin_lock(&inode->i_lock);
-			finish_wait(mbsFS_falloc_waitq, &mbsFS_fault_wait);
+			finish_wait(mbsfs_falloc_waitq, &mbsFS_fault_wait);
 			spin_unlock(&inode->i_lock);
 			return ret;
 		}
@@ -2965,7 +2965,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 	struct inode *inode = file_inode(file);
 	struct mbsfs_sb_info *sbinfo = MBS_SB(inode->i_sb);
 	struct mbsfs_inode_info *info = MBS_I(inode);
-	struct mbsfs_falloc mbsFS_falloc;
+	struct mbsfs_falloc mbsfs_falloc;
 	pgoff_t start, index, end;
 	int error;
 
@@ -2978,7 +2978,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		struct address_space *mapping = file->f_mapping;
 		loff_t unmap_start = round_up(offset, PAGE_SIZE);
 		loff_t unmap_end = round_down(offset + len, PAGE_SIZE) - 1;
-		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(mbsFS_falloc_waitq);
+		DECLARE_WAIT_QUEUE_HEAD_ONSTACK(mbsfs_falloc_waitq);
 
 		/* protected by i_mutex */
 		if (info->seals & F_SEAL_WRITE) {
@@ -2986,11 +2986,11 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 			goto out;
 		}
 
-		mbsFS_falloc.waitq = &mbsFS_falloc_waitq;
-		mbsFS_falloc.start = unmap_start >> PAGE_SHIFT;
-		mbsFS_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
+		mbsfs_falloc.waitq = &mbsfs_falloc_waitq;
+		mbsfs_falloc.start = unmap_start >> PAGE_SHIFT;
+		mbsfs_falloc.next = (unmap_end + 1) >> PAGE_SHIFT;
 		spin_lock(&inode->i_lock);
-		inode->i_private = &mbsFS_falloc;
+		inode->i_private = &mbsfs_falloc;
 		spin_unlock(&inode->i_lock);
 
 		if ((u64)unmap_end > (u64)unmap_start)
@@ -3001,8 +3001,8 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 
 		spin_lock(&inode->i_lock);
 		inode->i_private = NULL;
-		wake_up_all(&mbsFS_falloc_waitq);
-		WARN_ON_ONCE(!list_empty(&mbsFS_falloc_waitq.head));
+		wake_up_all(&mbsfs_falloc_waitq);
+		WARN_ON_ONCE(!list_empty(&mbsfs_falloc_waitq.head));
 		spin_unlock(&inode->i_lock);
 		error = 0;
 		goto out;
@@ -3026,13 +3026,13 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		goto out;
 	}
 
-	mbsFS_falloc.waitq = NULL;
-	mbsFS_falloc.start = start;
-	mbsFS_falloc.next  = start;
-	mbsFS_falloc.nr_falloced = 0;
-	mbsFS_falloc.nr_unswapped = 0;
+	mbsfs_falloc.waitq = NULL;
+	mbsfs_falloc.start = start;
+	mbsfs_falloc.next  = start;
+	mbsfs_falloc.nr_falloced = 0;
+	mbsfs_falloc.nr_unswapped = 0;
 	spin_lock(&inode->i_lock);
-	inode->i_private = &mbsFS_falloc;
+	inode->i_private = &mbsfs_falloc;
 	spin_unlock(&inode->i_lock);
 
 	for (index = start; index < end; index++) {
@@ -3044,7 +3044,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		 */
 		if (signal_pending(current))
 			error = -EINTR;
-		else if (mbsFS_falloc.nr_unswapped > mbsFS_falloc.nr_falloced)
+		else if (mbsfs_falloc.nr_unswapped > mbsfs_falloc.nr_falloced)
 			error = -ENOMEM;
 		else
 			error = mbsfs_getpage(inode, index, &page, MBS_FALLOC);
@@ -3062,9 +3062,9 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		 * Inform mbsfs_writepage() how far we have reached.
 		 * No need for lock or barrier: we have the page lock.
 		 */
-		mbsFS_falloc.next++;
+		mbsfs_falloc.next++;
 		if (!PageUptodate(page))
-			mbsFS_falloc.nr_falloced++;
+			mbsfs_falloc.nr_falloced++;
 
 		/*
 		 * If !PageUptodate, leave it that way so that freeable pages
