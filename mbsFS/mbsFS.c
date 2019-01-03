@@ -155,7 +155,7 @@ hugetlb_file_setup(const char *name, size_t size, vm_flags_t acctflag,
 #endif
 //static inline void prep_transhuge_page(struct page *page) {}
 /*
- * mbsfs_fallocate communicates with mbsfs_fault or mbsFS_writepage via
+ * mbsfs_fallocate communicates with mbsfs_fault or mbsfs_writepage via
  * inode->i_private (with i_mutex making sure that it has only one user at
  * a time): we would prefer not to enlarge the mbsFS inode just for that.
  */
@@ -1108,7 +1108,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 
 	/*
 	 * Charge page using GFP_KERNEL while we can wait, before taking
-	 * the mbsFS_swaplist_mutex which might hold up mbsFS_writepage().
+	 * the mbsFS_swaplist_mutex which might hold up mbsfs_writepage().
 	 * Charged back to the user (not to caller) when swap account is used.
 	 */
 	error = mem_cgroup_try_charge(page, current->mm, GFP_KERNEL, &memcg,
@@ -1143,12 +1143,13 @@ out:
 	put_page(page);
 	return error;
 }
+#endif
 
 /*
  * Move the page from the page cache to the swap cache.
  */
 
-static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
+static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 {
 	struct mbsfs_inode_info *info;
 	struct address_space *mapping;
@@ -1169,7 +1170,7 @@ static int mbsFS_writepage(struct page *page, struct writeback_control *wbc)
 
 	/*
 	 * Our capabilities prevent regular writeback or sync from ever calling
-	 * mbsFS_writepage; but a stacking filesystem might use ->writepage of
+	 * mbsfs_writepage; but a stacking filesystem might use ->writepage of
 	 * its underlying filesystem, in which case mbsfs should write out to
 	 * swap only in response to memory pressure, and not for the writeback
 	 * threads or sync.
@@ -1253,7 +1254,6 @@ redirty:
 	unlock_page(page);
 	return 0;
 }
-#endif
 static void mbsfs_show_mpol(struct seq_file *seq, struct mempolicy *mpol)
 {
 	char buffer[64];
@@ -3059,7 +3059,7 @@ static long mbsfs_fallocate(struct file *file, int mode, loff_t offset,
 		}
 
 		/*
-		 * Inform mbsFS_writepage() how far we have reached.
+		 * Inform mbsfs_writepage() how far we have reached.
 		 * No need for lock or barrier: we have the page lock.
 		 */
 		mbsFS_falloc.next++;
@@ -4057,7 +4057,7 @@ static void mbsfs_destroy_inodecache(void)
 }
 
 static const struct address_space_operations mbsfs_aops = {
-	//.writepage	= mbsFS_writepage,
+	.writepage	= mbsfs_writepage,
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
