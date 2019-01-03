@@ -37,7 +37,7 @@ struct mbsfs_inode_info {
 	unsigned long		flags;
 	unsigned long		alloced;	/* data pages alloced to file */
 	//unsigned long		swapped;	/* subtotal assigned to swap */
-	//struct list_head      shrinklist;     /* shrinkable hpage inodes */
+	struct list_head      shrinklist;     /* shrinkable hpage inodes */
 	//struct list_head	swaplist;	/* chain of maybes on swap */
 	//struct shared_policy	policy;		/* NUSA memory alloc policy */
 	struct mbsfs_policy	policy;		/* NUSA memory alloc policy */
@@ -61,9 +61,11 @@ struct mbsfs_sb_info {
 	kuid_t uid;		    /* Mount uid for root directory */
 	kgid_t gid;		    /* Mount gid for root directory */
 	struct mempolicy *mpol;     /* default memory policy for mappings */
-	//spinlock_t shrinklist_lock;   /* Protects shrinklist */
-	//struct list_head shrinklist;  /* List of shinkable inodes */
-	//unsigned long shrinklist_len; /* Length of shrinklist */
+#if 1 //about huge page 2019.01.02 19:38
+	spinlock_t shrinklist_lock;   /* Protects shrinklist */
+	struct list_head shrinklist;  /* List of shinkable inodes */
+	unsigned long shrinklist_len; /* Length of shrinklist */
+#endif
 };
 
 static inline struct mbsfs_sb_info *MBS_SB(struct super_block *sb)
