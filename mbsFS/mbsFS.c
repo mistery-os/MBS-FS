@@ -301,10 +301,10 @@ bool vma_is_mbsFS(struct vm_area_struct *vma)
 {
 	return vma->vm_ops == &mbsfs_vm_ops;
 }
+#endif
 
 static LIST_HEAD(mbsFS_swaplist);
-static DEFINE_MUTEX(mbsFS_swaplist_mutex);
-#endif
+static DEFINE_MUTEX(mbsfs_swaplist_mutex);
 
 static int mbsfs_reserve_inode(struct super_block *sb)
 {
@@ -972,9 +972,9 @@ static void mbsfs_evict_inode(struct inode *inode)
 			spin_unlock(&sbinfo->shrinklist_lock);
 		}
 		if (!list_empty(&info->swaplist)) {
-			mutex_lock(&mbsFS_swaplist_mutex);
+			mutex_lock(&mbsfs_swaplist_mutex);
 			list_del_init(&info->swaplist);
-			mutex_unlock(&mbsFS_swaplist_mutex);
+			mutex_unlock(&mbsfs_swaplist_mutex);
 		}
 #endif
 	}
@@ -1038,9 +1038,9 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 
 	gfp = mapping_gfp_mask(mapping);
 	if (mbsFS_should_replace_page(*pagep, gfp)) {
-		mutex_unlock(&mbsFS_swaplist_mutex);
+		mutex_unlock(&mbsfs_swaplist_mutex);
 		error = mbsFS_replace_page(pagep, gfp, info, index);
-		mutex_lock(&mbsFS_swaplist_mutex);
+		mutex_lock(&mbsfs_swaplist_mutex);
 		/*
 		 * We needed to drop mutex to make that restrictive page
 		 * allocation, but the inode might have been freed while we
@@ -1064,7 +1064,7 @@ static int mbsFS_unuse_inode(struct mbsfs_inode_info *info,
 	}
 
 	/*
-	 * We rely on mbsFS_swaplist_mutex, not only to protect the swaplist,
+	 * We rely on mbsfs_swaplist_mutex, not only to protect the swaplist,
 	 * but also to hold up mbsfs_evict_inode(): so inode cannot be freed
 	 * beneath us (pagelock doesn't help until the page is in pagecache).
 	 */
@@ -1108,7 +1108,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 
 	/*
 	 * Charge page using GFP_KERNEL while we can wait, before taking
-	 * the mbsFS_swaplist_mutex which might hold up mbsfs_writepage().
+	 * the mbsfs_swaplist_mutex which might hold up mbsfs_writepage().
 	 * Charged back to the user (not to caller) when swap account is used.
 	 */
 	error = mem_cgroup_try_charge(page, current->mm, GFP_KERNEL, &memcg,
@@ -1118,7 +1118,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 	/* No radix_tree_preload: swap entry keeps a place for page in tree */
 	error = -EAGAIN;
 
-	mutex_lock(&mbsFS_swaplist_mutex);
+	mutex_lock(&mbsfs_swaplist_mutex);
 	list_for_each_safe(this, next, &mbsFS_swaplist) {
 		info = list_entry(this, struct mbsfs_inode_info, swaplist);
 		if (info->swapped)
@@ -1130,7 +1130,7 @@ int mbsFS_unuse(swp_entry_t swap, struct page *page)
 			break;
 		/* found nothing in this: move on to search the next */
 	}
-	mutex_unlock(&mbsFS_swaplist_mutex);
+	mutex_unlock(&mbsfs_swaplist_mutex);
 
 	if (error) {
 		if (error != -ENOMEM)
@@ -1225,7 +1225,7 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 	 * we've incremented swapped, because mbsFS_unuse_inode() will
 	 * prune a !swapped inode from the swaplist under this mutex.
 	 */
-	mutex_lock(&mbsFS_swaplist_mutex);
+	mutex_lock(&mbsfs_swaplist_mutex);
 	if (list_empty(&info->swaplist))
 		list_add_tail(&info->swaplist, &mbsFS_swaplist);
 
@@ -1238,13 +1238,13 @@ static int mbsfs_writepage(struct page *page, struct writeback_control *wbc)
 		swap_shmem_alloc(swap);
 		mbsFS_delete_from_page_cache(page, swp_to_radix_entry(swap));
 
-		mutex_unlock(&mbsFS_swaplist_mutex);
+		mutex_unlock(&mbsfs_swaplist_mutex);
 		BUG_ON(page_mapped(page));
 		swap_writepage(page, wbc);
 		return 0;
 	}
 
-	mutex_unlock(&mbsFS_swaplist_mutex);
+	mutex_unlock(&mbsfs_swaplist_mutex);
 free_swap:
 	put_swap_page(page, swap);
 redirty:
