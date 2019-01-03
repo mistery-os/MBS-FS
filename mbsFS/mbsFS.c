@@ -2404,7 +2404,7 @@ mbsfs_write_begin(struct file *file, struct address_space *mapping,
 		struct page **pagep, void **fsdata)
 {
 	struct inode *inode = mapping->host;
-	//struct mbsfs_inode_info *info = MBS_I(inode);
+	struct mbsfs_inode_info *info = MBS_I(inode);
 	pgoff_t index = pos >> PAGE_SHIFT;
 
 	/* i_mutex is held by caller */
