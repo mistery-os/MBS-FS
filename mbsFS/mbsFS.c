@@ -1916,8 +1916,6 @@ static int mbsfs_fault(struct vm_fault *vmf)
 		return ((error == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS);
 	return ret;
 }
-#if 0
-#endif
 unsigned long mbsfs_get_unmapped_area(struct file *file,
 		unsigned long uaddr, unsigned long len,
 		unsigned long pgoff, unsigned long flags)
@@ -2277,7 +2275,7 @@ ssize_t mbsfs_file_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	return ret;
 }
 //EXPORT_SYMBOL(mbsFS_file_write_iter);
-#if 0
+#if 1
 int mbsfs_readpage(struct file *file, struct page *page)
 {
 	clear_highpage(page);
@@ -2286,6 +2284,8 @@ int mbsfs_readpage(struct file *file, struct page *page)
 	unlock_page(page);
 	return 0;
 }
+#endif
+#if 0
 static inline struct page *
 mbsfs__alloc_pages_node(int nid, gfp_t gfp_mask, unsigned int order)
 {
@@ -4067,7 +4067,7 @@ static const struct address_space_operations mbsfs_aops = {
 	.set_page_dirty	= __set_page_dirty_no_writeback,
 	.write_begin	= mbsfs_write_begin,
 	.write_end	= mbsfs_write_end,
-	//.readpage	= mbsfs_readpage,		//tNO
+	.readpage	= mbsfs_readpage,		//tNO
 #ifdef CONFIG_MIGRATION
 	.migratepage	= migrate_page,
 #endif
