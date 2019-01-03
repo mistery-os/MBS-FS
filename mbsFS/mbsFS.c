@@ -2408,7 +2408,7 @@ mbsfs_write_begin(struct file *file, struct address_space *mapping,
 	pgoff_t index = pos >> PAGE_SHIFT;
 
 	/* i_mutex is held by caller */
-#if 0
+#if 1
 	if (unlikely(info->seals & (F_SEAL_WRITE | F_SEAL_GROW))) {
 		if (info->seals & F_SEAL_WRITE)
 			return -EPERM;
@@ -2741,7 +2741,7 @@ static loff_t mbsfs_file_llseek(struct file *file, loff_t offset, int whence)
 	inode_unlock(inode);
 	return offset;
 }
-#if 0
+#if 1
 /*
  * We need a tag: a new tag would expand every radix_tree_node by 8 bytes,
  * so reuse a tag which we firmly believe is never set or cleared on mbsFS.
